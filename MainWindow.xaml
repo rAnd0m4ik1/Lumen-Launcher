@@ -1,0 +1,150 @@
+<Window x:Class="CraftDeck.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:shell="clr-namespace:System.Windows.Shell;assembly=PresentationFramework"
+        xmlns:ctl="clr-namespace:CraftDeck.Controls"
+        Title="Lumen" Height="760" Width="1200" MinHeight="560" MinWidth="900"
+        WindowStartupLocation="CenterScreen" WindowStyle="None"
+        Background="{DynamicResource BgGradBrush}"
+        Foreground="{DynamicResource TextBrush}"
+        FontFamily="{StaticResource UiFont}"
+        AllowDrop="True" Drop="Window_Drop">
+    <shell:WindowChrome.WindowChrome>
+        <shell:WindowChrome CaptionHeight="38" ResizeBorderThickness="6" GlassFrameThickness="0" CornerRadius="0"/>
+    </shell:WindowChrome.WindowChrome>
+    <Grid x:Name="RootGrid">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="38"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+
+        <ctl:BackgroundFX x:Name="Fx" Grid.RowSpan="2"/>
+
+        <Border Grid.Row="0" BorderBrush="{DynamicResource HairlineDarkBrush}" BorderThickness="0,0,0,1"
+                Background="{DynamicResource TitleGradBrush}">
+            <Grid>
+                <StackPanel Orientation="Horizontal" Margin="10,0,0,0" VerticalAlignment="Center">
+                    <Border Width="20" Height="20" CornerRadius="5" Background="{DynamicResource AccentBrush}">
+                        <Path Width="11" Height="11" Stretch="None" Fill="{DynamicResource AccentFgBrush}"
+                              Data="M5.5,0 L6.5,4.5 L11,5.5 L6.5,6.5 L5.5,11 L4.5,6.5 L0,5.5 L4.5,4.5 Z"
+                              HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                    </Border>
+                    <TextBlock Text="Lumen" FontSize="12.5" FontWeight="SemiBold" Margin="8,0,0,0" VerticalAlignment="Center"/>
+                </StackPanel>
+                <StackPanel Orientation="Horizontal" HorizontalAlignment="Right"
+                            shell:WindowChrome.IsHitTestVisibleInChrome="True">
+                    <Button Style="{StaticResource Caption}" Click="Min_Click" ToolTip="Minimize" AutomationProperties.Name="Minimize" >
+                        <TextBlock Text="&#xE921;" FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" FontSize="10"/>
+                    </Button>
+                    <Button Style="{StaticResource Caption}" Click="Max_Click" ToolTip="Maximize" AutomationProperties.Name="Maximize" >
+                        <TextBlock x:Name="MaxGlyph" Text="&#xE922;" FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" FontSize="10"/>
+                    </Button>
+                    <Button Style="{StaticResource CaptionClose}" Click="Close_Click" ToolTip="Close" AutomationProperties.Name="Close" >
+                        <TextBlock Text="&#xE711;" FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" FontSize="10"/>
+                    </Button>
+                </StackPanel>
+            </Grid>
+        </Border>
+
+        <Grid Grid.Row="1">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="210"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+
+            <Border Grid.Column="0" Background="{DynamicResource SidebarGradBrush}"
+                    BorderBrush="{DynamicResource HairlineDarkBrush}" BorderThickness="0,0,1,0">
+                <DockPanel>
+                    <Border DockPanel.Dock="Top" Margin="12,14,12,16" Style="{StaticResource HoverCard}"
+                            Padding="11,10" MouseLeftButtonUp="Account_Click" ToolTip="Switch account">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <Grid Width="40" Height="40">
+                                <Ellipse Fill="{DynamicResource AccentBrush}">
+                                    <Ellipse.Effect>
+                                        <DropShadowEffect BlurRadius="14" ShadowDepth="2" Opacity="0.5"
+                                                          Color="{DynamicResource AccentColor}"/>
+                                    </Ellipse.Effect>
+                                </Ellipse>
+                                <TextBlock x:Name="AccountInitial" Text="P" FontSize="16" FontWeight="Bold"
+                                           Foreground="{DynamicResource AccentFgBrush}"
+                                           HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                <Ellipse x:Name="AccountDot" Width="12" Height="12" Fill="#FF8A8F9E"
+                                         Stroke="{DynamicResource SidebarEdgeBrush}" StrokeThickness="2"
+                                         HorizontalAlignment="Right" VerticalAlignment="Bottom"/>
+                            </Grid>
+                            <StackPanel Grid.Column="1" Margin="10,0,0,0" VerticalAlignment="Center">
+                                <TextBlock x:Name="AccountName" Text="Player" FontSize="13.5" FontWeight="Bold"
+                                           TextTrimming="CharacterEllipsis"/>
+                                <Border Background="{DynamicResource ChipBrush}" CornerRadius="6" Padding="6,2" Margin="0,4,0,0"
+                                        HorizontalAlignment="Left">
+                                    <TextBlock x:Name="AccountType" Text="Offline" FontSize="10"
+                                               Foreground="{DynamicResource SubtleBrush}"/>
+                                </Border>
+                            </StackPanel>
+                            <TextBlock Grid.Column="2" Text="&#xE76C;" FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets"
+                                       FontSize="13" Foreground="{DynamicResource SubtleBrush}"
+                                       VerticalAlignment="Center" Margin="6,0,0,0"/>
+                        </Grid>
+                    </Border>
+
+                    <StackPanel>
+                        <TextBlock Text="MENU" FontSize="10" FontWeight="SemiBold" Foreground="{DynamicResource SubtleBrush}"
+                                   Margin="22,6,0,8" Opacity="0.7"/>
+                        <RadioButton x:Name="NavInstances" Style="{StaticResource NavButton}" Tag="&#xE74C;" Content="Instances"
+                                     GroupName="nav" IsChecked="True" Checked="Nav_Checked"/>
+                        <RadioButton x:Name="NavBrowse" Style="{StaticResource NavButton}" Tag="&#xE8F1;" Content="Discover"
+                                     GroupName="nav" Checked="Nav_Checked"/>
+                        <RadioButton x:Name="NavAccounts" Style="{StaticResource NavButton}" Tag="&#xE77B;" Content="Accounts"
+                                     GroupName="nav" Checked="Nav_Checked"/>
+                        <RadioButton x:Name="NavSettings" Style="{StaticResource NavButton}" Tag="&#xE713;" Content="Settings"
+                                     GroupName="nav" Checked="Nav_Checked"/>
+                    </StackPanel>
+                </DockPanel>
+            </Border>
+
+            <Grid Grid.Column="1">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="*"/>
+                    <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
+                <ContentControl x:Name="PageHost"/>
+                <Border Grid.Row="1" Background="{DynamicResource PanelBrush}" BorderBrush="{DynamicResource HairlineDarkBrush}"
+                        BorderThickness="0,1,0,0" Padding="16,7">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <Ellipse Width="8" Height="8" VerticalAlignment="Center" Margin="0,0,9,0"
+                                 Fill="{DynamicResource AccentBrush}">
+                            <Ellipse.Triggers>
+                                <EventTrigger RoutedEvent="Loaded">
+                                    <BeginStoryboard>
+                                        <Storyboard RepeatBehavior="Forever" AutoReverse="True">
+                                            <DoubleAnimation Storyboard.TargetProperty="Opacity" From="1" To="0.35" Duration="0:0:1.1"/>
+                                        </Storyboard>
+                                    </BeginStoryboard>
+                                </EventTrigger>
+                            </Ellipse.Triggers>
+                        </Ellipse>
+                        <TextBlock x:Name="StatusText" Grid.Column="1" Text="Ready" VerticalAlignment="Center" FontSize="12"
+                                   Foreground="{DynamicResource SubtleBrush}" MaxWidth="360" TextTrimming="CharacterEllipsis"/>
+                        <ProgressBar x:Name="StatusProgress" Grid.Column="2" Height="5" Margin="14,0" VerticalAlignment="Center"
+                                     Maximum="100" Visibility="Hidden"/>
+                        <TextBlock x:Name="VersionText" Grid.Column="3" Text="Lumen 1.0" FontSize="11"
+                                   Foreground="{DynamicResource SubtleBrush}" VerticalAlignment="Center"/>
+                    </Grid>
+                </Border>
+            </Grid>
+        </Grid>
+
+        <Border x:Name="WinFrame" Grid.RowSpan="2" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" IsHitTestVisible="False"/>
+    </Grid>
+</Window>

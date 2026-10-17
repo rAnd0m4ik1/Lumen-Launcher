@@ -1,0 +1,198 @@
+<UserControl x:Class="CraftDeck.Views.DetailView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <UserControl.Resources>
+        <DataTemplate x:Key="ContentCard">
+            <Border Style="{StaticResource HoverCard}" Padding="12" Margin="0,0,0,8"
+                    RenderTransformOrigin="0.5,0.5">
+                <Border.RenderTransform>
+                    <TranslateTransform/>
+                </Border.RenderTransform>
+                <Border.Triggers>
+                    <EventTrigger RoutedEvent="MouseEnter">
+                        <BeginStoryboard>
+                            <Storyboard>
+                                <DoubleAnimation Storyboard.TargetProperty="(Border.RenderTransform).(TranslateTransform.Y)" To="-2" Duration="0:0:0.12"/>
+                            </Storyboard>
+                        </BeginStoryboard>
+                    </EventTrigger>
+                    <EventTrigger RoutedEvent="MouseLeave">
+                        <BeginStoryboard>
+                            <Storyboard>
+                                <DoubleAnimation Storyboard.TargetProperty="(Border.RenderTransform).(TranslateTransform.Y)" To="0" Duration="0:0:0.15"/>
+                            </Storyboard>
+                        </BeginStoryboard>
+                    </EventTrigger>
+                </Border.Triggers>
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="64"/>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+                    <Border Width="56" Height="56" CornerRadius="12" VerticalAlignment="Top"
+                            Background="{DynamicResource TileGradBrush}"
+                            BorderBrush="{DynamicResource HairlineDarkBrush}" BorderThickness="1">
+                        <Grid>
+                            <TextBlock Text="{Binding Letter}" FontSize="22" FontWeight="Bold"
+                                       Visibility="{Binding LetterVis}"
+                                       Foreground="{DynamicResource AccentBrush}"
+                                       HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                            <Image Source="{Binding Icon}" Width="52" Height="52" Visibility="{Binding IconVis}"
+                                   RenderOptions.BitmapScalingMode="HighQuality"/>
+                        </Grid>
+                    </Border>
+                    <StackPanel Grid.Column="1" Margin="12,0,12,0">
+                        <TextBlock Text="{Binding Title}" FontSize="15" FontWeight="Bold"
+                                   TextTrimming="CharacterEllipsis" TextWrapping="NoWrap"/>
+                        <TextBlock Text="{Binding Desc}" Style="{StaticResource Subtle}" FontSize="12"
+                                   MaxHeight="34" TextTrimming="CharacterEllipsis"/>
+                        <TextBlock Text="{Binding Meta}" Style="{StaticResource Subtle}" FontSize="11" Margin="0,6,0,0"/>
+                    </StackPanel>
+                    <Button Grid.Column="2" VerticalAlignment="Center" Style="{StaticResource Ghost}"
+                            Padding="10,6" Click="Delete_Click" Tag="{Binding}" ToolTip="Delete"
+                            AutomationProperties.Name="Delete">
+                        <TextBlock Style="{StaticResource BtnIcon}" Text="&#xE74D;"
+                                   Foreground="{DynamicResource DangerBrush}"/>
+                    </Button>
+                </Grid>
+            </Border>
+        </DataTemplate>
+    </UserControl.Resources>
+
+    <Grid Margin="24,20">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+
+        <StackPanel Orientation="Horizontal">
+            <Button Content="← Back" Style="{StaticResource Ghost}" Click="Back_Click" Margin="-10,0,8,0"/>
+            <TextBlock x:Name="Title" Style="{StaticResource H1}" FontSize="22"/>
+        </StackPanel>
+
+        <Border Grid.Row="1" Style="{StaticResource Card}" Margin="0,14,0,14">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+                <Border x:Name="IconBox" Width="44" Height="44" CornerRadius="11" Margin="0,0,12,0"
+                        VerticalAlignment="Center" Background="{DynamicResource TileGradBrush}"
+                        BorderBrush="{DynamicResource HairlineDarkBrush}" BorderThickness="1">
+                    <Grid>
+                        <Path x:Name="IconStar" Data="{StaticResource Spark}" Width="22" Height="22"
+                              Stretch="Uniform" Opacity="0.5" Fill="{DynamicResource TextBrush}"
+                              HorizontalAlignment="Center" VerticalAlignment="Center" Visibility="Collapsed"/>
+                        <TextBlock x:Name="IconGlyph" FontSize="22" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        <Image x:Name="IconImage" Width="40" Height="40" Visibility="Collapsed"
+                               RenderOptions.BitmapScalingMode="HighQuality"/>
+                    </Grid>
+                </Border>
+                <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                    <TextBlock x:Name="SubInfo" FontSize="13" FontWeight="SemiBold"/>
+                    <TextBlock x:Name="DirInfo" Style="{StaticResource Subtle}" FontSize="11" Margin="0,3,0,0"/>
+                </StackPanel>
+                <Button Grid.Column="2" Style="{StaticResource Ghost}" Click="Settings_Click" Margin="0,0,8,0"
+                        ToolTip="Instance settings" AutomationProperties.Name="Instance settings">
+                    <TextBlock Style="{StaticResource BtnIcon}" Text="&#xE713;"/>
+                </Button>
+                <Button Grid.Column="3" Style="{StaticResource Outlined}" Click="Add_Click" Margin="0,0,8,0"
+                        AutomationProperties.Name="Add content">
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock Style="{StaticResource BtnIcon}" Text="&#xE896;"/>
+                        <TextBlock Text="Add content"/>
+                    </StackPanel>
+                </Button>
+                <Button Grid.Column="4" x:Name="PlayBtn" Style="{StaticResource Accent}" MinWidth="120" Click="Play_Click"
+                        AutomationProperties.Name="Play">
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock x:Name="PlayGlyph" Style="{StaticResource BtnIcon}" Text="&#xE768;"/>
+                        <Border x:Name="StopBox" Width="10" Height="10" CornerRadius="2" Margin="0,0,7,0"
+                                VerticalAlignment="Center" Visibility="Collapsed"
+                                Background="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}"/>
+                        <TextBlock x:Name="PlayText" Text="Play"/>
+                    </StackPanel>
+                </Button>
+            </Grid>
+        </Border>
+
+        <TabControl Grid.Row="2" x:Name="Tabs" SelectionChanged="Tabs_SelectionChanged">
+            <TabItem Header="Mods">
+                <Grid>
+                    <ScrollViewer VerticalScrollBarVisibility="Auto">
+                        <StackPanel Margin="0,8,0,0">
+                            <ItemsControl x:Name="ModsList" ItemTemplate="{StaticResource ContentCard}"/>
+                            <TextBlock x:Name="ModsEmpty" Style="{StaticResource Subtle}" Margin="2,6,0,0"
+                                       Text="Nothing installed yet. Use “Add content” to search Discover."/>
+                        </StackPanel>
+                    </ScrollViewer>
+                    <ProgressBar x:Name="ModsBusy" IsIndeterminate="True" Height="3" VerticalAlignment="Top" Visibility="Collapsed"/>
+                </Grid>
+            </TabItem>
+            <TabItem Header="Shaders">
+                <Grid>
+                    <ScrollViewer VerticalScrollBarVisibility="Auto">
+                        <StackPanel Margin="0,8,0,0">
+                            <ItemsControl x:Name="ShadersList" ItemTemplate="{StaticResource ContentCard}"/>
+                            <TextBlock x:Name="ShadersEmpty" Style="{StaticResource Subtle}" Margin="2,6,0,0"
+                                       Text="No shader packs in this instance."/>
+                        </StackPanel>
+                    </ScrollViewer>
+                    <ProgressBar x:Name="ShadersBusy" IsIndeterminate="True" Height="3" VerticalAlignment="Top" Visibility="Collapsed"/>
+                </Grid>
+            </TabItem>
+            <TabItem Header="Resource packs">
+                <Grid>
+                    <ScrollViewer VerticalScrollBarVisibility="Auto">
+                        <StackPanel Margin="0,8,0,0">
+                            <ItemsControl x:Name="RpsList" ItemTemplate="{StaticResource ContentCard}"/>
+                            <TextBlock x:Name="RpsEmpty" Style="{StaticResource Subtle}" Margin="2,6,0,0"
+                                       Text="No resource packs in this instance."/>
+                        </StackPanel>
+                    </ScrollViewer>
+                    <ProgressBar x:Name="RpsBusy" IsIndeterminate="True" Height="3" VerticalAlignment="Top" Visibility="Collapsed"/>
+                </Grid>
+            </TabItem>
+            <TabItem Header="Worlds">
+                <Grid>
+                    <ScrollViewer VerticalScrollBarVisibility="Auto">
+                        <StackPanel Margin="0,8,0,0">
+                            <ItemsControl x:Name="WorldsList" ItemTemplate="{StaticResource ContentCard}"/>
+                            <TextBlock x:Name="WorldsEmpty" Style="{StaticResource Subtle}" Margin="2,6,0,0"
+                                       Text="No worlds yet — they show up here after you play."/>
+                        </StackPanel>
+                    </ScrollViewer>
+                    <ProgressBar x:Name="WorldsBusy" IsIndeterminate="True" Height="3" VerticalAlignment="Top" Visibility="Collapsed"/>
+                </Grid>
+            </TabItem>
+            <TabItem Header="Log">
+                <Grid Margin="0,8,0,0">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                    </Grid.RowDefinitions>
+                    <TextBlock x:Name="LogState" Style="{StaticResource Subtle}" FontSize="11"/>
+                    <TextBox Grid.Row="1" x:Name="LogBox" Margin="0,8,0,0" IsReadOnly="True"
+                             FontFamily="Cascadia Mono, Consolas" FontSize="12" TextWrapping="NoWrap"
+                             VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto"
+                             Tag="No output yet — press Play and the game log shows up here."
+                             AutomationProperties.Name="Game log"/>
+                </Grid>
+            </TabItem>
+            <TabItem Header="Save &amp; configs">
+                <Border Style="{StaticResource Card}" HorizontalAlignment="Left" VerticalAlignment="Top" Margin="0,8">
+                    <StackPanel>
+                        <Button Content="Open game folder" Style="{StaticResource Outlined}" HorizontalAlignment="Left" Click="OpenGame_Click"/>
+                        <Button Content="Open world saves" Style="{StaticResource Outlined}" HorizontalAlignment="Left" Margin="0,6,0,0" Click="OpenSaves_Click"/>
+                        <Button Content="Open config folder" Style="{StaticResource Outlined}" HorizontalAlignment="Left" Margin="0,6,0,0" Click="OpenConfig_Click"/>
+                    </StackPanel>
+                </Border>
+            </TabItem>
+        </TabControl>
+    </Grid>
+</UserControl>
