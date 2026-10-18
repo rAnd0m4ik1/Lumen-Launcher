@@ -138,7 +138,7 @@
                                    Foreground="{DynamicResource SubtleBrush}" MaxWidth="360" TextTrimming="CharacterEllipsis"/>
                         <ProgressBar x:Name="StatusProgress" Grid.Column="2" Height="5" Margin="14,0" VerticalAlignment="Center"
                                      Maximum="100" Visibility="Hidden"/>
-                        <TextBlock x:Name="VersionText" Grid.Column="3" Text="Lumen 1.0" FontSize="11"
+                        <TextBlock x:Name="VersionText" Grid.Column="3" FontSize="11"
                                    Foreground="{DynamicResource SubtleBrush}" VerticalAlignment="Center"/>
                     </Grid>
                 </Border>

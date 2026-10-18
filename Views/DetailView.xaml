@@ -44,6 +44,7 @@
                     </Border>
                     <StackPanel Grid.Column="1" Margin="12,0,12,0">
                         <TextBlock Text="{Binding Title}" FontSize="15" FontWeight="Bold"
+                                   Foreground="{DynamicResource TextBrush}"
                                    TextTrimming="CharacterEllipsis" TextWrapping="NoWrap"/>
                         <TextBlock Text="{Binding Desc}" Style="{StaticResource Subtle}" FontSize="12"
                                    MaxHeight="34" TextTrimming="CharacterEllipsis"/>

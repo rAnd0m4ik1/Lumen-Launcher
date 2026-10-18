@@ -19,6 +19,7 @@ public partial class MainWindow : Window
     {
         Main = this;
         InitializeComponent();
+        VersionText.Text = "Lumen " + (typeof(MainWindow).Assembly.GetName().Version?.ToString(3) ?? "0");
         WindowCorners.Apply(this);
         PageHost.Content = _instances;
         RefreshAccount();
