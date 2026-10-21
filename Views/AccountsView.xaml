@@ -26,7 +26,7 @@
             <ItemsControl x:Name="AccountsList" MaxWidth="640" HorizontalAlignment="Left">
                 <ItemsControl.ItemTemplate>
                     <DataTemplate>
-                        <Border Style="{StaticResource HoverCard}" Width="440" Height="72" Padding="14"
+                        <Border Style="{StaticResource HoverSlide}" Width="440" Height="72" Padding="14"
                                 Margin="0,0,0,10" MouseUp="Card_Click">
                             <Grid>
                                 <Grid.ColumnDefinitions>

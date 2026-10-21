@@ -350,7 +350,8 @@
                             <Setter TargetName="bd" Property="BorderThickness" Value="1"/>
                             <Setter TargetName="bar" Property="Opacity" Value="1"/>
                             <Setter TargetName="glow" Property="Opacity" Value="0.10"/>
-                            <Setter Property="Foreground" Value="{DynamicResource AccentBrush}"/>
+                            <Setter Property="Foreground" Value="{DynamicResource TextBrush}"/>
+                            <Setter TargetName="icon" Property="Foreground" Value="{DynamicResource AccentBrush}"/>
                             <Setter TargetName="icon" Property="Effect">
                                 <Setter.Value>
                                     <DropShadowEffect BlurRadius="12" ShadowDepth="0" Opacity="0.7"
@@ -635,6 +636,30 @@
                 <Setter Property="Background" Value="{DynamicResource CardHoverBrush}"/>
                 <Setter Property="BorderBrush" Value="{DynamicResource AccentDimBrush}"/>
             </Trigger>
+        </Style.Triggers>
+    </Style>
+
+    <Style x:Key="HoverSlide" TargetType="Border" BasedOn="{StaticResource HoverCard}">
+        <Setter Property="RenderTransform">
+            <Setter.Value>
+                <TranslateTransform/>
+            </Setter.Value>
+        </Setter>
+        <Style.Triggers>
+            <EventTrigger RoutedEvent="MouseEnter">
+                <BeginStoryboard>
+                    <Storyboard>
+                        <DoubleAnimation Storyboard.TargetProperty="(Border.RenderTransform).(TranslateTransform.X)" To="6" Duration="0:0:0.12"/>
+                    </Storyboard>
+                </BeginStoryboard>
+            </EventTrigger>
+            <EventTrigger RoutedEvent="MouseLeave">
+                <BeginStoryboard>
+                    <Storyboard>
+                        <DoubleAnimation Storyboard.TargetProperty="(Border.RenderTransform).(TranslateTransform.X)" To="0" Duration="0:0:0.15"/>
+                    </Storyboard>
+                </BeginStoryboard>
+            </EventTrigger>
         </Style.Triggers>
     </Style>
 

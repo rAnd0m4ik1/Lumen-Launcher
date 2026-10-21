@@ -60,14 +60,9 @@
                                    RenderOptions.BitmapScalingMode="HighQuality"/>
                         </Grid>
                     </Border>
-                    <StackPanel Grid.Column="1" Margin="14,0,0,0">
+                    <StackPanel Grid.Column="1" Margin="14,0,0,0" VerticalAlignment="Center">
                         <Button x:Name="PickBtn" Content="Choose image…" Style="{StaticResource Outlined}"
                                 HorizontalAlignment="Left" Click="Pick_Click"/>
-                        <Button x:Name="RemoveBtn" Content="Remove" Style="{StaticResource Ghost}"
-                                HorizontalAlignment="Left" Margin="0,6,0,0" Click="Remove_Click"/>
-                        <TextBox x:Name="GlyphBox" Width="72" Margin="0,8,0,0" HorizontalAlignment="Left"
-                                 MaxLength="4" TextAlignment="Center"
-                                 ToolTip="Or type an emoji" AutomationProperties.Name="Icon emoji"/>
                     </StackPanel>
                 </Grid>
 

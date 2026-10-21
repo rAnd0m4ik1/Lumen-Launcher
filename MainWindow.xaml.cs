@@ -19,7 +19,7 @@ public partial class MainWindow : Window
     {
         Main = this;
         InitializeComponent();
-        VersionText.Text = "Lumen " + (typeof(MainWindow).Assembly.GetName().Version?.ToString(3) ?? "0");
+        VersionText.Text = typeof(MainWindow).Assembly.GetName().Version?.ToString(3) ?? "0";
         WindowCorners.Apply(this);
         PageHost.Content = _instances;
         RefreshAccount();
@@ -81,6 +81,7 @@ public partial class MainWindow : Window
         Dispatcher.Invoke(() =>
         {
             StatusText.Text = text;
+            StatusChip.Visibility = Visibility.Visible;
             StatusProgress.Visibility = Visibility.Visible;
             StatusProgress.Value = Math.Clamp(percent, 0, 100);
         });
@@ -91,6 +92,7 @@ public partial class MainWindow : Window
         Dispatcher.Invoke(() =>
         {
             StatusText.Text = text;
+            StatusChip.Visibility = text == "Ready" ? Visibility.Collapsed : Visibility.Visible;
             StatusProgress.Visibility = Visibility.Hidden;
         });
     }

@@ -10,7 +10,7 @@
     <RootNamespace>CraftDeck</RootNamespace>
     <ApplicationManifest>app.manifest</ApplicationManifest>
     <ApplicationIcon>app.ico</ApplicationIcon>
-    <Version>1.0.1</Version>
+    <Version>1.0.2</Version>
     <Product>Lumen</Product>
     <AssemblyTitle>Lumen</AssemblyTitle>
     <EnableCompressionInSingleFile>true</EnableCompressionInSingleFile>

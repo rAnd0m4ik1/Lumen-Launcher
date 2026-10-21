@@ -51,17 +51,6 @@ public static class InstanceIcons
         inst.Config.Icon = FileName;
     }
 
-    public static void Clear(Instance inst)
-    {
-        var icon = inst.Config.Icon;
-        if (!string.IsNullOrWhiteSpace(icon) && !Path.IsPathRooted(icon))
-        {
-            var local = Path.Combine(inst.Dir, icon);
-            if (File.Exists(local)) File.Delete(local);
-        }
-        inst.Config.Icon = "";
-    }
-
     public static string? CustomGlyph(Instance inst)
     {
         if (FileOf(inst) != null) return null;
