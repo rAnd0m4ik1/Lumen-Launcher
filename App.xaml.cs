@@ -21,7 +21,6 @@ public partial class App : Application
             var w = new MainWindow();
             w.Show();
             _ = AccountService.RefreshAllMicrosoftAsync();
-            Log("startup ok");
         }
         catch (Exception ex)
         {

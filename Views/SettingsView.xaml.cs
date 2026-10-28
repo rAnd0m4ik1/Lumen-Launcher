@@ -25,8 +25,8 @@ public partial class SettingsView : UserControl
         "#FF525E54", "#FF847545", "#FF7E735F",
     };
 
-    private readonly List<(string Hex, TextBlock Check, Button Ring)> _swatches = new();
-    private readonly List<(string Hex, TextBlock Check, Button Ring)> _fxSwatches = new();
+    private readonly List<(string Hex, Icon Check, Button Ring)> _swatches = new();
+    private readonly List<(string Hex, Icon Check, Button Ring)> _fxSwatches = new();
     private readonly List<(BackgroundPreset Preset, Border Preview, Button Ring, TextBlock Label)> _bgSwatches = new();
 
     public SettingsView()
@@ -110,17 +110,16 @@ public partial class SettingsView : UserControl
     }
 
     private void BuildSwatches(WrapPanel host, IEnumerable<(string Hex, string Label)> items,
-        string namePrefix, RoutedEventHandler onClick, List<(string Hex, TextBlock Check, Button Ring)> sink)
+        string namePrefix, RoutedEventHandler onClick, List<(string Hex, Icon Check, Button Ring)> sink)
     {
         foreach (var (hex, label) in items)
         {
             var color = (Color)ColorConverter.ConvertFromString(hex);
-            var check = new TextBlock
+            var check = new Icon
             {
-                Text = ((char)0xE73E).ToString(),
-                FontFamily = new FontFamily("Segoe Fluent Icons, Segoe MDL2 Assets"),
-                FontSize = 12,
-                FontWeight = FontWeights.Bold,
+                Glyph = "Check",
+                Size = 13,
+                Weight = 2.6,
                 Foreground = new SolidColorBrush(ThemeService.ContrastForeground(hex)),
                 HorizontalAlignment = HorizontalAlignment.Center,
                 VerticalAlignment = VerticalAlignment.Center,
@@ -357,7 +356,7 @@ public partial class SettingsView : UserControl
 
     private void UpdateFxChecks() => UpdateSwatchChecks(_fxSwatches, AppServices.Settings.FxColor);
 
-    private static void UpdateSwatchChecks(List<(string Hex, TextBlock Check, Button Ring)> swatches, string current)
+    private static void UpdateSwatchChecks(List<(string Hex, Icon Check, Button Ring)> swatches, string current)
     {
         foreach (var (hex, check, ring) in swatches)
         {

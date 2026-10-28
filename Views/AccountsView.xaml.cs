@@ -125,12 +125,12 @@ public partial class AccountsView : UserControl
         CopyCodeText.Text = "Copy code";
         AddPopup.StaysOpen = true;
         var main = MainWindow.Main!;
-        main.SetProgress("Microsoft browser sign-in…", 30);
+        main.SetProgress("Microsoft browser sign-in…");
         Hint("Opening the browser — the sign-in code will show here.");
         try
         {
             var res = await MicrosoftAuth.LoginInBrowserAsync(
-                new Progress<string>(t => { main.SetProgress(t, 50); Hint(t); }),
+                new Progress<string>(t => { main.SetProgress(t); Hint(t); }),
                 c =>
                 {
                     _msCode = c;

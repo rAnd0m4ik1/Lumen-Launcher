@@ -21,11 +21,11 @@ public class AppSettings
     public string GameArguments { get; set; } = "";
     public bool CloseOnLaunch { get; set; }
     public int DownloadThreads { get; set; } = 8;
-    public string AccentColor { get; set; } = "#FF1FDB62";
+    public string AccentColor { get; set; } = "#FF0A7DD6";
     public string ThemeMode { get; set; } = "dark";
-    public string BackgroundPreset { get; set; } = "midnight";
+    public string BackgroundPreset { get; set; } = "night";
     public string BackgroundStyle { get; set; } = "gradient";
-    public string BackgroundFx { get; set; } = "triangles";
+    public string BackgroundFx { get; set; } = "off";
     public string FxColor { get; set; } = Services.FxColorCatalog.Default;
 
     public string InstancesDir => Path.Combine(RootDir, "instances");

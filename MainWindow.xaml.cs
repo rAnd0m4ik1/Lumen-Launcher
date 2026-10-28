@@ -29,7 +29,7 @@ public partial class MainWindow : Window
         Deactivated += (_, _) => Fx.SetPointer(new Point(ActualWidth / 2, ActualHeight * 0.42), false);
         StateChanged += (_, _) =>
         {
-            MaxGlyph.Text = WindowState == WindowState.Maximized ? "\uE923" : "\uE922";
+            MaxGlyph.Glyph = WindowState == WindowState.Maximized ? "CaptionRestore" : "CaptionMax";
             RootGrid.Margin = WindowState == WindowState.Maximized ? new Thickness(7) : new Thickness(0);
             WinFrame.BorderThickness = WindowState == WindowState.Maximized ? new Thickness(0) : new Thickness(1);
         };
@@ -76,14 +76,12 @@ public partial class MainWindow : Window
         move.BeginAnimation(System.Windows.Media.TranslateTransform.YProperty, slide);
     }
 
-    public void SetProgress(string text, double percent)
+    public void SetProgress(string text)
     {
         Dispatcher.Invoke(() =>
         {
             StatusText.Text = text;
             StatusChip.Visibility = Visibility.Visible;
-            StatusProgress.Visibility = Visibility.Visible;
-            StatusProgress.Value = Math.Clamp(percent, 0, 100);
         });
     }
 
@@ -93,7 +91,6 @@ public partial class MainWindow : Window
         {
             StatusText.Text = text;
             StatusChip.Visibility = text == "Ready" ? Visibility.Collapsed : Visibility.Visible;
-            StatusProgress.Visibility = Visibility.Hidden;
         });
     }
 
@@ -131,7 +128,7 @@ public partial class MainWindow : Window
         if (PageHost == null) return;
         if (sender == NavInstances) GoInstances();
         else if (sender == NavBrowse) { SetPage(_browse); _browse.Prepare(null); }
-        else if (sender == NavAccounts) { SetPage(_accounts); _accounts.Refresh(); }
+        else if (sender == NavAccounts) GoAccounts();
         else if (sender == NavSettings) { SetPage(_settings); _settings.Refresh(); }
     }
 

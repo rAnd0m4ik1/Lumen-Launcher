@@ -1,6 +1,7 @@
-<UserControl x:Class="CraftDeck.Views.AccountsView"
+﻿<UserControl x:Class="CraftDeck.Views.AccountsView"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:ctl="clr-namespace:CraftDeck.Controls">
     <Grid Margin="24,20">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
@@ -15,7 +16,7 @@
             <Button Grid.Column="1" x:Name="AddBtn" Style="{StaticResource Outlined}" VerticalAlignment="Center"
                     Click="Add_Click" AutomationProperties.Name="Add account">
                 <StackPanel Orientation="Horizontal">
-                    <TextBlock Style="{StaticResource BtnIcon}" Text="&#xE710;"/>
+                    <ctl:Icon Style="{StaticResource BtnIcon}" Glyph="Plus"/>
                     <TextBlock Text="Add account"/>
                 </StackPanel>
             </Button>
@@ -56,7 +57,7 @@
                                         BorderThickness="0" VerticalAlignment="Center" Tag="{Binding Id}"
                                         Click="Remove_Click" AutomationProperties.Name="Remove">
                                     <StackPanel Orientation="Horizontal">
-                                        <TextBlock Style="{StaticResource BtnIcon}" Text="&#xE74D;"/>
+                                        <ctl:Icon Style="{StaticResource BtnIcon}" Glyph="Trash"/>
                                         <TextBlock Text="Remove"/>
                                     </StackPanel>
                                 </Button>
@@ -77,7 +78,7 @@
                                 Click="AddMicrosoft_Click" AutomationProperties.Name="Add Microsoft account">
                             <StackPanel Orientation="Horizontal">
                                 <Border Style="{StaticResource CardIcon}">
-                                    <TextBlock Style="{StaticResource Icon}" Text="&#xECA5;"/>
+                                    <ctl:Icon Style="{StaticResource Icon}" Glyph="Tiles"/>
                                 </Border>
                                 <TextBlock Text="Microsoft" FontSize="13.5" FontWeight="SemiBold"
                                            VerticalAlignment="Center"/>
@@ -87,7 +88,7 @@
                                 AutomationProperties.Name="Add offline account">
                             <StackPanel Orientation="Horizontal">
                                 <Border Style="{StaticResource CardIcon}">
-                                    <TextBlock Style="{StaticResource Icon}" Text="&#xE7FC;"/>
+                                    <ctl:Icon Style="{StaticResource Icon}" Glyph="User"/>
                                 </Border>
                                 <TextBlock Text="Offline" FontSize="13.5" FontWeight="SemiBold"
                                            VerticalAlignment="Center"/>
@@ -104,7 +105,7 @@
                         <Button Grid.Column="1" x:Name="CopyCodeBtn" Style="{StaticResource Outlined}"
                                 Click="CopyCode_Click" AutomationProperties.Name="Copy sign-in code">
                             <StackPanel Orientation="Horizontal">
-                                <TextBlock Style="{StaticResource BtnIcon}" Text="&#xE8C8;"/>
+                                <ctl:Icon Style="{StaticResource BtnIcon}" Glyph="Copy"/>
                                 <TextBlock x:Name="CopyCodeText" Text="Copy code"/>
                             </StackPanel>
                         </Button>
@@ -119,7 +120,7 @@
                         <Button Grid.Column="1" Style="{StaticResource Outlined}" Margin="6,0,0,0"
                                 Click="AddOffline_Click" AutomationProperties.Name="Add">
                             <StackPanel Orientation="Horizontal">
-                                <TextBlock Style="{StaticResource BtnIcon}" Text="&#xE73E;"/>
+                                <ctl:Icon Style="{StaticResource BtnIcon}" Glyph="Plus"/>
                                 <TextBlock Text="Add"/>
                             </StackPanel>
                         </Button>

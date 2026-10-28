@@ -46,7 +46,6 @@ public static class ThemeService
         res["HairlineDarkBrush"] = new SolidColorBrush(C(p.HairlineSoft));
         res["ChipBrush"] = new SolidColorBrush(C(p.Chip));
         res["ThumbBrush"] = new SolidColorBrush(C(p.Thumb));
-        res["PanelBrush"] = new SolidColorBrush(C(p.Panel));
 
         res["BgGradBrush"] = Vertical(p.BgTop, p.BgMid, p.BgBottom);
         res["SidebarGradBrush"] = Vertical(p.SidebarTop, p.SidebarBottom);

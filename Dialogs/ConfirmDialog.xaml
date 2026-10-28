@@ -1,7 +1,8 @@
-<Window x:Class="CraftDeck.Dialogs.ConfirmDialog"
+﻿<Window x:Class="CraftDeck.Dialogs.ConfirmDialog"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:shell="clr-namespace:System.Windows.Shell;assembly=PresentationFramework"
+        xmlns:ctl="clr-namespace:CraftDeck.Controls"
         Title="Lumen" Width="440" SizeToContent="Height" ResizeMode="NoResize"
         WindowStartupLocation="CenterOwner" WindowStyle="None"
         Background="{DynamicResource BgBrush}" Foreground="{DynamicResource TextBrush}"
@@ -33,7 +34,7 @@
                             Width="34" Height="28" Margin="0,0,4,0" Click="Cancel_Click"
                             ToolTip="Close" AutomationProperties.Name="Close"
                             shell:WindowChrome.IsHitTestVisibleInChrome="True">
-                        <TextBlock Text="&#xE711;" FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" FontSize="10"/>
+                        <ctl:Icon Glyph="Close" Size="11"/>
                     </Button>
                 </Grid>
             </Border>

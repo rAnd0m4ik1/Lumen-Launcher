@@ -16,16 +16,16 @@ public static class PlayFlow
         var log = new GameLog();
         try
         {
-            var status = new Progress<string>(s => main.SetProgress(s, 5));
+            var status = new Progress<string>(s => main.SetProgress(s));
             var details = await AppServices.Launch.EnsureInstalledAsync(inst, status, CancellationToken.None);
-            main.SetProgress("Preparing launch…", 80);
+            main.SetProgress("Preparing launch…");
 
             var need = JavaLocator.RequiredMajor(details);
             string? java = null;
             try
             {
                 java = await JavaManager.EnsureJavaAsync(need, AppServices.Settings,
-                    new Progress<string>(s => main.SetProgress(s, 70)), CancellationToken.None);
+                    new Progress<string>(s => main.SetProgress(s)), CancellationToken.None);
             }
             catch (Exception ex)
             {

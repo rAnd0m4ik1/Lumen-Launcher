@@ -31,14 +31,6 @@ public class MinecraftService
         return _manifest;
     }
 
-    public async Task<List<string>> GetVersionIdsAsync(bool includeSnapshots = false)
-    {
-        var m = await GetManifestAsync();
-        return m.versions
-            .Where(v => includeSnapshots || v.type == "release")
-            .Select(v => v.id).ToList();
-    }
-
     public async Task<VersionDetails> GetVersionDetailsAsync(string version)
     {
         Directory.CreateDirectory(_settings.MetaDir);

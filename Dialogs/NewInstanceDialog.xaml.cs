@@ -133,7 +133,7 @@ public partial class NewInstanceDialog : Window
         try
         {
             await AppServices.Launch.EnsureInstalledAsync(inst,
-                new Progress<string>(s => main.SetProgress(s, 5)), CancellationToken.None);
+                new Progress<string>(s => main.SetProgress(s)), CancellationToken.None);
             main.SetIdle();
         }
         catch (Exception ex)

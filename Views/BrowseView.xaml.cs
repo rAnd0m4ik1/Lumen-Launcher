@@ -47,7 +47,13 @@ public class BrowseCard : INotifyPropertyChanged
         get => _installed;
         set { _installed = value; Raise(nameof(Installed)); Raise(nameof(ActionLabel)); Raise(nameof(ActionTip)); }
     }
-    public string ActionLabel => Installed ? "Installed" : "Install";
+    private bool _installing;
+    public bool Installing
+    {
+        get => _installing;
+        set { _installing = value; Raise(nameof(Installing)); Raise(nameof(ActionLabel)); }
+    }
+    public string ActionLabel => Installing ? "Installing" : Installed ? "Installed" : "Install";
     public string ActionTip => Installed
         ? "Already in this instance — clicking installs the latest compatible file again"
         : "Install into the selected instance";
@@ -299,18 +305,20 @@ public partial class BrowseView : UserControl
     private async void Install_Click(object sender, RoutedEventArgs e)
     {
         if (sender is not Button { Tag: BrowseCard card }) return;
+        if (card.Installing) return;
         var type = CurrentType;
         if (type == ContentType.Modpack)
         {
-            MainWindow.Main!.SetProgress($"Downloading modpack {card.Title}…", 40);
+            card.Installing = true;
+            MainWindow.Main!.SetProgress($"Downloading modpack {card.Title}…");
             try
             {
                 var iconTask = BrowseCard.IconBytesAsync(card.IconUrl);
                 var file = card.Cf != null
                     ? await CurseForgeService.DownloadModpackAsync(card.Cf.id, card.Title,
-                        new Progress<string>(s => MainWindow.Main!.SetProgress(s, 60)))
+                        new Progress<string>(s => MainWindow.Main!.SetProgress(s)))
                     : await ModrinthService.DownloadModpackAsync(card.Hit!.project_id, card.Title,
-                        new Progress<string>(s => MainWindow.Main!.SetProgress(s, 60)));
+                        new Progress<string>(s => MainWindow.Main!.SetProgress(s)));
                 var icon = await iconTask;
                 MainWindow.Main!.SetIdle();
                 MainWindow.Main!.ImportModpackFile(file, icon);
@@ -321,6 +329,10 @@ public partial class BrowseView : UserControl
                 MessageBox.Show(Window.GetWindow(this), ex.Message, "Lumen",
                     MessageBoxButton.OK, MessageBoxImage.Warning);
             }
+            finally
+            {
+                card.Installing = false;
+            }
             return;
         }
         if (TargetInstance.SelectedItem is not Instance inst)
@@ -328,7 +340,8 @@ public partial class BrowseView : UserControl
             MessageBox.Show(Window.GetWindow(this), "Create/select an instance first.", "Lumen");
             return;
         }
-        MainWindow.Main!.SetProgress($"Installing {card.Title} into {inst.Config.Name}…", 40);
+        card.Installing = true;
+        MainWindow.Main!.SetProgress($"Installing {card.Title} into {inst.Config.Name}…");
         try
         {
             var loader = inst.Config.Loader == LoaderKind.Vanilla ? "fabric" : inst.Config.Loader.ToString();
@@ -343,6 +356,10 @@ public partial class BrowseView : UserControl
         {
             MainWindow.Main!.SetIdle();
             MessageBox.Show(Window.GetWindow(this), ex.Message, "Lumen", MessageBoxButton.OK, MessageBoxImage.Warning);
+        }
+        finally
+        {
+            card.Installing = false;
         }
     }
 }

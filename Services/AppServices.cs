@@ -43,12 +43,4 @@ public static class AppServices
         }
         catch { }
     }
-
-    public static void ReloadSettings()
-    {
-        Settings = AppSettings.Load();
-        Instances = new InstanceService(Settings);
-        Minecraft = new MinecraftService(Settings);
-        Launch = new LaunchService(Settings, Minecraft);
-    }
 }

@@ -33,19 +33,6 @@ public class Hit
     public System.Text.Json.JsonElement license { get; set; }
 }
 
-public class Project
-{
-    public string id { get; set; }
-    public string slug { get; set; }
-    public string title { get; set; }
-    public string description { get; set; }
-    public string body { get; set; }
-    public List<string> categories { get; set; }
-    public string project_type { get; set; }
-    public long downloads { get; set; }
-    public List<string> versions { get; set; }
-}
-
 public class ProjectVersion
 {
     public string id { get; set; }
@@ -84,10 +71,3 @@ public class ModrinthFile
     }
 }
 
-public class ModpackFile
-{
-    public string id { get; set; }
-    public string name { get; set; }
-    public string version_number { get; set; }
-    public List<ModrinthFile> files { get; set; }
-}

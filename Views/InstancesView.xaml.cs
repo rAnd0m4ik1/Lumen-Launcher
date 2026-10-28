@@ -86,9 +86,9 @@ public partial class InstancesView : UserControl
         var inst = dlg.CreatedInstance;
         try
         {
-            MainWindow.Main!.SetProgress($"Importing modpack {Path.GetFileName(file)}…", 10);
+            MainWindow.Main!.SetProgress($"Importing modpack {Path.GetFileName(file)}…");
             await ModrinthService.InstallModpackAsync(inst, file,
-                new Progress<string>(s => MainWindow.Main!.SetProgress(s, 50)));
+                new Progress<string>(s => MainWindow.Main!.SetProgress(s)));
             inst.Config.ModrinthPackId = null;
             if (packIcon != null) InstanceIcons.Store(inst, packIcon);
             AppServices.Instances.Save(inst);

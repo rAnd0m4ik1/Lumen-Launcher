@@ -11,7 +11,6 @@ public sealed class ThemePreset
     public required string BgBottom { get; init; }
     public required string SidebarTop { get; init; }
     public required string SidebarBottom { get; init; }
-    public required string Panel { get; init; }
     public required string Bg2 { get; init; }
     public required string CardTop { get; init; }
     public required string CardBottom { get; init; }
@@ -36,7 +35,7 @@ public static class ThemeCatalog
             Id = "midnight", Label = "Midnight", Light = false,
             BgTop = "#FF0F1218", BgMid = "#FF141824", BgBottom = "#FF171C2A",
             SidebarTop = "#FF141822", SidebarBottom = "#FF11141D",
-            Panel = "#FF13161F", Bg2 = "#FF161A24",
+            Bg2 = "#FF161A24",
             CardTop = "#FF1F2431", CardBottom = "#FF1B202B", CardHover = "#FF283041",
             Border = "#FF303A4C", Thumb = "#FF4A5266",
             Text = "#FFEDEEF2", Subtle = "#FF98A0B0",
@@ -46,7 +45,7 @@ public static class ThemeCatalog
             Id = "paper", Label = "Paper", Light = true,
             BgTop = "#FFFFFFFF", BgMid = "#FFF7F8FA", BgBottom = "#FFF3F5F8",
             SidebarTop = "#FFF1F3F7", SidebarBottom = "#FFEAEFF5",
-            Panel = "#FFF2F4F8", Bg2 = "#FFFFFFFF",
+            Bg2 = "#FFFFFFFF",
             CardTop = "#FFFFFFFF", CardBottom = "#FFF8FAFC", CardHover = "#FFF0F3F8",
             Border = "#FFD8DEE8", Thumb = "#FFC2CAD8",
             Text = "#FF1B212B", Subtle = "#FF606D7C",
@@ -99,7 +98,6 @@ public sealed class BackgroundPreset
             BgBottom = ramp.Length > 1 ? Soft(ramp[2]) : Soft(ramp[0]),
             SidebarTop = At(Light ? l - 0.028 : l - 0.014),
             SidebarBottom = At(Light ? l - 0.052 : l - 0.030),
-            Panel = At(Light ? l - 0.008 : l + 0.008),
             Bg2 = At(Light ? Math.Min(l + 0.05, 0.995) : l + 0.028),
             CardTop = At(Light ? Math.Min(l + 0.05, 0.995) : l + 0.070),
             CardBottom = At(Light ? Math.Min(l + 0.022, 0.99) : l + 0.048),
@@ -151,7 +149,7 @@ public static class BackgroundCatalog
     public static BackgroundPreset? Find(string? id) =>
         All.FirstOrDefault(p => string.Equals(p.Id, id, StringComparison.OrdinalIgnoreCase));
 
-    public static BackgroundPreset DefaultFor(bool light) => Find(light ? "paper" : "midnight")!;
+    public static BackgroundPreset DefaultFor(bool light) => Find(light ? "paper" : "night")!;
 
     public static BackgroundStyle ParseStyle(string? id) =>
         string.Equals(id, "static", StringComparison.OrdinalIgnoreCase)
