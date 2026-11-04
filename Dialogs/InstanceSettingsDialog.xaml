@@ -62,7 +62,7 @@
                         </Grid>
                     </Border>
                     <StackPanel Grid.Column="1" Margin="14,0,0,0" VerticalAlignment="Center">
-                        <Button x:Name="PickBtn" Content="Choose imageвЂ¦" Style="{StaticResource Outlined}"
+                        <Button x:Name="PickBtn" Content="Choose image…" Style="{StaticResource Outlined}"
                                 HorizontalAlignment="Left" Click="Pick_Click"/>
                     </StackPanel>
                 </Grid>

@@ -174,12 +174,12 @@ public partial class DetailView : UserControl
         };
         if (scan == null) return;
 
-        var (list, empty, busy) = Tabs.SelectedIndex switch
+        var (list, busy) = Tabs.SelectedIndex switch
         {
-            0 => (ModsList, ModsEmpty, ModsBusy),
-            1 => (ShadersList, ShadersEmpty, ShadersBusy),
-            2 => (RpsList, RpsEmpty, RpsBusy),
-            _ => (WorldsList, WorldsEmpty, WorldsBusy),
+            0 => (ModsList, ModsBusy),
+            1 => (ShadersList, ShadersBusy),
+            2 => (RpsList, RpsBusy),
+            _ => (WorldsList, WorldsBusy),
         };
 
         var tab = Tabs.SelectedIndex;
@@ -188,7 +188,6 @@ public partial class DetailView : UserControl
         var items = await Task.Run(scan);
         if (Tabs.SelectedIndex != tab) { busy.Visibility = Visibility.Collapsed; return; }
         list.ItemsSource = items;
-        empty.Visibility = items.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
         busy.Visibility = Visibility.Collapsed;
     }
 

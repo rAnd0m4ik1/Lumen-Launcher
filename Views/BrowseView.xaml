@@ -38,7 +38,7 @@
                 <ColumnDefinition Width="Auto"/>
             </Grid.ColumnDefinitions>
             <TextBox x:Name="SearchBox" KeyDown="Search_KeyDown" TextChanged="Search_TextChanged"
-                     Tag="Search mods, shaders, packsвЂ¦"/>
+                     Tag="Search mods, shaders, packs…"/>
             <ComboBox Grid.Column="1" x:Name="SourceBox" Width="140" Margin="8,0,0,0" SelectionChanged="Type_Changed">
                 <ComboBoxItem>
                     <StackPanel Orientation="Horizontal">
@@ -77,7 +77,7 @@
         </StackPanel>
 
         <Grid Grid.Row="3">
-            <TextBlock x:Name="Hint" Text="LoadingвЂ¦" Style="{StaticResource Subtle}"
+            <TextBlock x:Name="Hint" Text="Loading…" Style="{StaticResource Subtle}"
                        HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="14"/>
             <TextBlock x:Name="ErrorText" Visibility="Collapsed" Foreground="{DynamicResource DangerBrush}"
                        HorizontalAlignment="Center" VerticalAlignment="Center" TextWrapping="Wrap" MaxWidth="500"/>

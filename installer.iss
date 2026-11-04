@@ -1,5 +1,5 @@
 #define MyAppName "Lumen"
-#define MyAppVersion "1.1.0"
+#define MyAppVersion "1.1.1"
 #define MyAppExe "Lumen.exe"
 
 [Setup]

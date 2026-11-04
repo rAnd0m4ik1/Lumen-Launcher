@@ -70,7 +70,7 @@
         </Grid.RowDefinitions>
 
         <StackPanel Orientation="Horizontal">
-            <Button Content="в†ђ Back" Style="{StaticResource Ghost}" Click="Back_Click" Margin="-10,0,8,0"/>
+            <Button Content="← Back" Style="{StaticResource Ghost}" Click="Back_Click" Margin="-10,0,8,0"/>
             <TextBlock x:Name="Title" Style="{StaticResource H1}" FontSize="22"/>
         </StackPanel>
 
@@ -127,8 +127,6 @@
                     <ScrollViewer VerticalScrollBarVisibility="Auto">
                         <StackPanel Margin="0,8,0,0">
                             <ItemsControl x:Name="ModsList" ItemTemplate="{StaticResource ContentCard}"/>
-                            <TextBlock x:Name="ModsEmpty" Style="{StaticResource Subtle}" Margin="2,6,0,0"
-                                       Text="Nothing installed yet. Use вЂњAdd contentвЂќ to search Discover."/>
                         </StackPanel>
                     </ScrollViewer>
                     <ProgressBar x:Name="ModsBusy" IsIndeterminate="True" Height="3" VerticalAlignment="Top" Visibility="Collapsed"/>
@@ -139,8 +137,6 @@
                     <ScrollViewer VerticalScrollBarVisibility="Auto">
                         <StackPanel Margin="0,8,0,0">
                             <ItemsControl x:Name="ShadersList" ItemTemplate="{StaticResource ContentCard}"/>
-                            <TextBlock x:Name="ShadersEmpty" Style="{StaticResource Subtle}" Margin="2,6,0,0"
-                                       Text="No shader packs in this instance."/>
                         </StackPanel>
                     </ScrollViewer>
                     <ProgressBar x:Name="ShadersBusy" IsIndeterminate="True" Height="3" VerticalAlignment="Top" Visibility="Collapsed"/>
@@ -151,8 +147,6 @@
                     <ScrollViewer VerticalScrollBarVisibility="Auto">
                         <StackPanel Margin="0,8,0,0">
                             <ItemsControl x:Name="RpsList" ItemTemplate="{StaticResource ContentCard}"/>
-                            <TextBlock x:Name="RpsEmpty" Style="{StaticResource Subtle}" Margin="2,6,0,0"
-                                       Text="No resource packs in this instance."/>
                         </StackPanel>
                     </ScrollViewer>
                     <ProgressBar x:Name="RpsBusy" IsIndeterminate="True" Height="3" VerticalAlignment="Top" Visibility="Collapsed"/>
@@ -163,8 +157,6 @@
                     <ScrollViewer VerticalScrollBarVisibility="Auto">
                         <StackPanel Margin="0,8,0,0">
                             <ItemsControl x:Name="WorldsList" ItemTemplate="{StaticResource ContentCard}"/>
-                            <TextBlock x:Name="WorldsEmpty" Style="{StaticResource Subtle}" Margin="2,6,0,0"
-                                       Text="No worlds yet вЂ” they show up here after you play."/>
                         </StackPanel>
                     </ScrollViewer>
                     <ProgressBar x:Name="WorldsBusy" IsIndeterminate="True" Height="3" VerticalAlignment="Top" Visibility="Collapsed"/>
@@ -180,7 +172,7 @@
                     <TextBox Grid.Row="1" x:Name="LogBox" Margin="0,8,0,0" IsReadOnly="True"
                              FontFamily="Cascadia Mono, Consolas" FontSize="12" TextWrapping="NoWrap"
                              VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto"
-                             Tag="No output yet вЂ” press Play and the game log shows up here."
+                             Tag="No output yet — press Play and the game log shows up here."
                              AutomationProperties.Name="Game log"/>
                 </Grid>
             </TabItem>

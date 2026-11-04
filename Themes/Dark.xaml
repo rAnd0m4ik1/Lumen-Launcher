@@ -847,42 +847,10 @@
             <Setter.Value>
                 <ControlTemplate TargetType="TabItem">
                     <Border x:Name="bd" Margin="0,0,6,0" Padding="14,8" CornerRadius="8" Background="Transparent">
-                        <Grid>
-                            <ContentPresenter x:Name="hdr" ContentSource="Header" HorizontalAlignment="Center"/>
-                            <Border x:Name="ul" Height="2" CornerRadius="2" Opacity="0" IsHitTestVisible="False"
-                                    Margin="8,0,8,3" VerticalAlignment="Bottom" HorizontalAlignment="Stretch"
-                                    RenderTransformOrigin="0.5,0.5"
-                                    Background="{DynamicResource AccentBrush}">
-                                <Border.RenderTransform>
-                                    <ScaleTransform ScaleX="0"/>
-                                </Border.RenderTransform>
-                            </Border>
-                        </Grid>
+                        <ContentPresenter x:Name="hdr" ContentSource="Header" HorizontalAlignment="Center"/>
                     </Border>
                     <ControlTemplate.Triggers>
                         <Trigger Property="IsSelected" Value="True">
-                            <Trigger.EnterActions>
-                                <BeginStoryboard>
-                                    <Storyboard>
-                                        <DoubleAnimation Storyboard.TargetName="ul" Storyboard.TargetProperty="Opacity"
-                                                         To="1" Duration="0:0:0.05"/>
-                                        <DoubleAnimation Storyboard.TargetName="ul" Duration="0:0:0.24"
-                                                         Storyboard.TargetProperty="(Border.RenderTransform).(ScaleTransform.ScaleX)"
-                                                         From="0" To="1" DecelerationRatio="0.8"/>
-                                    </Storyboard>
-                                </BeginStoryboard>
-                            </Trigger.EnterActions>
-                            <Trigger.ExitActions>
-                                <BeginStoryboard>
-                                    <Storyboard>
-                                        <DoubleAnimation Storyboard.TargetName="ul" Storyboard.TargetProperty="Opacity"
-                                                         To="0" Duration="0:0:0.14"/>
-                                        <DoubleAnimation Storyboard.TargetName="ul" Duration="0:0:0.14"
-                                                         Storyboard.TargetProperty="(Border.RenderTransform).(ScaleTransform.ScaleX)"
-                                                         To="0"/>
-                                    </Storyboard>
-                                </BeginStoryboard>
-                            </Trigger.ExitActions>
                             <Setter TargetName="bd" Property="Background" Value="{DynamicResource CardBrush}"/>
                             <Setter TargetName="hdr" Property="TextElement.Foreground" Value="{DynamicResource AccentBrush}"/>
                         </Trigger>

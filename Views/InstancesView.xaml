@@ -38,8 +38,6 @@
                           HorizontalAlignment="Center" Margin="0,0,0,10" Foreground="{DynamicResource SubtleBrush}"
                           Opacity="0.55"/>
                 <TextBlock Text="No instances yet" FontSize="16" FontWeight="SemiBold" HorizontalAlignment="Center"/>
-                <TextBlock Text="Press вЂњNew instanceвЂќ to create your first modpack."
-                           Foreground="{DynamicResource SubtleBrush}" FontSize="13" HorizontalAlignment="Center" Margin="0,4,0,0"/>
             </StackPanel>
             <ScrollViewer VerticalScrollBarVisibility="Auto">
                 <ItemsControl x:Name="Cards">
