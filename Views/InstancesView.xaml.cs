@@ -77,7 +77,9 @@ public partial class InstancesView : UserControl
 
     public async void ImportModpack(string file, byte[]? packIcon = null)
     {
-        var dlg = new NewInstanceDialog(preferredName: Path.GetFileNameWithoutExtension(file))
+        var pack = TryPeek(file);
+        var dlg = new NewInstanceDialog(Path.GetFileNameWithoutExtension(file),
+            pack.McVersion, pack.Loader, pack.LoaderVersion)
         {
             Owner = Window.GetWindow(this),
             InstallOnCreate = false,
@@ -103,6 +105,12 @@ public partial class InstancesView : UserControl
                 MessageBoxButton.OK, MessageBoxImage.Warning);
             MainWindow.Main!.SetIdle();
         }
+    }
+
+    private static ModrinthService.PackInfo TryPeek(string file)
+    {
+        try { return ModrinthService.PeekPack(file); }
+        catch { return new ModrinthService.PackInfo(null, null, null); }
     }
 
     private void Card_Open(object sender, MouseButtonEventArgs e)

@@ -95,19 +95,24 @@
                         <Grid>
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="*"/>
-                                <ColumnDefinition Width="14"/>
-                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="Auto"/>
                             </Grid.ColumnDefinitions>
-                            <StackPanel>
-                                <TextBlock Text="Min memory (MB)" Style="{StaticResource Subtle}"/>
-                                <TextBox x:Name="MinMemBox" Margin="0,4,0,0"/>
-                            </StackPanel>
-                            <StackPanel Grid.Column="2">
-                                <TextBlock Text="Max memory (MB)" Style="{StaticResource Subtle}"/>
-                                <TextBox x:Name="MaxMemBox" Margin="0,4,0,0"/>
-                            </StackPanel>
+                            <TextBlock Text="Max memory" Style="{StaticResource Subtle}"/>
+                            <TextBox x:Name="MaxMemBox" Grid.Column="1" Width="66" Height="24"
+                                     Padding="7,1" FontSize="12" TextAlignment="Right" MaxLength="6"
+                                     VerticalAlignment="Center"
+                                     LostFocus="MaxMemBox_Commit" KeyDown="MaxMemBox_KeyDown"
+                                     AutomationProperties.Name="Max memory in MB"/>
+                            <TextBlock Text="MB" Grid.Column="2" Style="{StaticResource Subtle}"
+                                       Margin="7,0,0,0" VerticalAlignment="Center"/>
                         </Grid>
-                        <TextBlock Text="Extra JVM arguments" Style="{StaticResource Subtle}" Margin="0,10,0,0"/>
+                        <Slider x:Name="MaxMemSlider" Margin="0,9,0,0" Minimum="0" Maximum="5"
+                                SmallChange="0.05" LargeChange="1" TickPlacement="Both"
+                                AutomationProperties.Name="Max memory" ValueChanged="MaxMem_Changed"
+                                Loaded="MaxMem_Loaded" SizeChanged="MaxMem_Size"/>
+                        <Canvas x:Name="MemScale" Height="15" Margin="7,2,7,0"/>
+                        <TextBlock Text="Extra JVM arguments" Style="{StaticResource Subtle}" Margin="0,14,0,0"/>
                         <TextBox x:Name="JvmBox" Margin="0,4,0,0"/>
                         <TextBlock Text="Extra game arguments" Style="{StaticResource Subtle}" Margin="0,10,0,0"/>
                         <TextBox x:Name="GameBox" Margin="0,4,0,0"/>
@@ -122,14 +127,6 @@
                         </StackPanel>
                         <TextBlock x:Name="RootDirText" Style="{StaticResource Subtle}" Margin="0,0,0,8"/>
                         <CheckBox x:Name="CloseOnLaunch" Content="Close launcher when the game starts" Margin="0,10,0,0"/>
-                        <Border x:Name="SavedText" Visibility="Collapsed" Margin="0,12,0,0" HorizontalAlignment="Left"
-                                Background="{DynamicResource Bg2Brush}" CornerRadius="8" Padding="10,5"
-                                BorderBrush="{DynamicResource AccentBrush}" BorderThickness="1">
-                            <StackPanel Orientation="Horizontal">
-                                <ctl:Icon Style="{StaticResource BtnIcon}" Glyph="Check" Size="13"/>
-                                <TextBlock Text="Saved automatically" FontSize="12"/>
-                            </StackPanel>
-                        </Border>
                     </StackPanel>
                 </Border>
 

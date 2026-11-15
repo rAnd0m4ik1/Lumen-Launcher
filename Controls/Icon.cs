@@ -110,6 +110,7 @@ public static class IconLibrary
         ["Tiles"] = (null, "M4.2,4.2 H10.7 V10.7 H4.2 Z M13.3,4.2 H19.8 V10.7 H13.3 Z " +
                           "M4.2,13.3 H10.7 V19.8 H4.2 Z M13.3,13.3 H19.8 V19.8 H13.3 Z", DefaultWeight),
         ["ChevronRight"] = ("M9.6,5.4 L16.2,12 L9.6,18.6", null, DefaultWeight),
+        ["ChevronLeft"] = ("M14.4,5.4 L7.8,12 L14.4,18.6", null, DefaultWeight),
         ["ChevronDown"] = ("M5.4,9.4 L12,16 L18.6,9.4", null, DefaultWeight),
         ["CaptionMin"] = ("M5,12.6 H19", null, 2.1),
         ["CaptionMax"] = ("M5.8,5.8 H18.2 V18.2 H5.8 Z", null, 2.1),

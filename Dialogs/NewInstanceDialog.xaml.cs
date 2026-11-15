@@ -14,18 +14,33 @@ public partial class NewInstanceDialog : Window
 
     private List<string> _mcVersions = new();
     private bool _loading;
+    private string? _prefMc;
+    private string? _prefLoaderVer;
 
-    public NewInstanceDialog(string? preferredName = null)
+    public NewInstanceDialog(string? preferredName = null, string? preferredMc = null,
+        string? preferredLoader = null, string? preferredLoaderVersion = null)
     {
         InitializeComponent();
         WindowCorners.Apply(this);
+        _prefMc = preferredMc;
+        _prefLoaderVer = preferredLoaderVersion;
         LoaderBox.ItemsSource = new[] { "Vanilla", "Fabric", "Quilt", "Forge", "NeoForge" };
-        LoaderBox.SelectedIndex = 1;
+        LoaderBox.SelectedItem = LoaderName(preferredLoader) ?? "Fabric";
         LoaderBox.SelectionChanged += async (_, _) => await LoadLoaderVersionsAsync();
         if (preferredName != null) NameBox.Text = preferredName;
         else NameBox.Text = "New pack";
         Loaded += LoadVersionsAsync;
     }
+
+    private static string? LoaderName(string? loader) => loader?.ToLowerInvariant() switch
+    {
+        "vanilla" => "Vanilla",
+        "fabric" => "Fabric",
+        "quilt" => "Quilt",
+        "forge" => "Forge",
+        "neoforge" => "NeoForge",
+        _ => null,
+    };
 
     private async void LoadVersionsAsync(object sender, RoutedEventArgs e)
     {
@@ -48,8 +63,10 @@ public partial class NewInstanceDialog : Window
         _mcVersions = manifest.versions
             .Where(v => Snapshots.IsChecked == true || v.type == "release")
             .Select(v => v.id).ToList();
+        if (_prefMc != null && !_mcVersions.Contains(_prefMc)) _mcVersions.Insert(0, _prefMc);
         MCBox.ItemsSource = _mcVersions;
-        var idx = _mcVersions.IndexOf("1.20.1");
+        var want = _prefMc ?? "1.20.1";
+        var idx = _mcVersions.IndexOf(want);
         MCBox.SelectedIndex = idx >= 0 ? idx : 0;
         _ = LoadLoaderVersionsAsync();
     }
@@ -79,9 +96,12 @@ public partial class NewInstanceDialog : Window
                 "NeoForge" => await LoaderService.GetNeoForgeVersionsAsync(mc),
                 _ => new(),
             };
+            var pref = _prefLoaderVer;
+            _prefLoaderVer = null;
+            if (pref != null && !versions.Contains(pref)) versions.Insert(0, pref);
             LoaderVerBox.ItemsSource = versions;
             LoaderVerBox.Visibility = versions.Count == 0 ? Visibility.Collapsed : Visibility.Visible;
-            if (versions.Count > 0) LoaderVerBox.SelectedIndex = 0;
+            if (versions.Count > 0) LoaderVerBox.SelectedIndex = pref != null ? Math.Max(0, versions.IndexOf(pref)) : 0;
             LoaderHint.Text = versions.Count == 0 && loader != "Vanilla"
                 ? $"{loader} has no release for Minecraft {mc}."
                 : "";

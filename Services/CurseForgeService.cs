@@ -34,48 +34,77 @@ public static class CurseForgeService
         _ => 6,
     };
 
-    public static async Task<List<CFMod>> SearchAsync(string query, ContentType type,
-        string? gameVersion = null, string? loader = null, int pageSize = 30, CancellationToken ct = default)
+    public static async Task<(List<CFMod> Mods, int Raw)> SearchAsync(string query, ContentType type,
+        string? gameVersion = null, string? loader = null, int pageSize = 20, int index = 1, CancellationToken ct = default)
     {
         var url = $"{Base}/mods/search?gameId=432&classId={ClassId(type)}" +
                   (string.IsNullOrEmpty(query) ? "" : $"&searchFilter={Uri.EscapeDataString(query)}") +
-                  $"&pageSize={pageSize}&sortField=2";
-        if (!string.IsNullOrEmpty(gameVersion)) url += $"&gameVersion={Uri.EscapeDataString(gameVersion)}";
-        var resp = Json.Load<CFList<CFMod>>(await GetAsync(url, ct));
-        var mods = resp?.data ?? new();
-        if (type == ContentType.Mod && !string.IsNullOrEmpty(loader) && loader is not ("Vanilla" or "vanilla"))
-            mods = mods.Where(m => (m.latestFiles ?? new()).Any(f =>
-                f.gameVersions?.Any(v => v.Equals(loader, StringComparison.OrdinalIgnoreCase)) == true)).ToList();
-        return mods;
+                  $"&pageSize={pageSize}&index={index}&sortField=2";
+        if (!string.IsNullOrEmpty(gameVersion)) url += McVersions.Query("gameVersion", gameVersion);
+        var lt = type == ContentType.Mod ? LoaderType(loader) : 0;
+        if (lt > 0) url += $"&modLoaderType={lt}";
+        var mods = Json.Load<CFList<CFMod>>(await GetAsync(url, ct))?.data ?? new();
+        return (mods, mods.Count);
     }
 
-    public static CFFile? PickFile(CFMod m, string? loader, ContentType type)
+    private static int LoaderType(string? loader) => loader?.ToLowerInvariant() switch
     {
-        var files = (m.latestFiles ?? new List<CFFile>())
+        "forge" => 1,
+        "fabric" => 4,
+        "quilt" => 5,
+        "neoforge" => 6,
+        _ => 0,
+    };
+
+    public static CFFile? PickFile(CFMod m, string? loader, ContentType type, string? gameVersion = null) =>
+        Best(m.latestFiles ?? new List<CFFile>(), loader, type, gameVersion);
+
+    public static CFFile? PickFrom(List<CFFile> files, string? loader, ContentType type, string? gameVersion) =>
+        Best(files, loader, type, gameVersion);
+
+    private static CFFile? Best(List<CFFile> files, string? loader, ContentType type, string? gameVersion)
+    {
+        var needLoader = type == ContentType.Mod && !string.IsNullOrEmpty(loader) && loader is not ("Vanilla" or "vanilla");
+        return files
             .Where(f => f.fileName.EndsWith(".jar", StringComparison.OrdinalIgnoreCase) ||
                         f.fileName.EndsWith(".zip", StringComparison.OrdinalIgnoreCase))
-            .AsEnumerable();
-        if (type != ContentType.Modpack && !string.IsNullOrEmpty(loader) && loader is not ("Vanilla" or "vanilla"))
-        {
-            var match = files.Where(f => f.gameVersions?.Any(v => v.Equals(loader, StringComparison.OrdinalIgnoreCase)) == true).ToList();
-            if (match.Count > 0) files = match;
-        }
-        return files
+            .Where(f => !needLoader || f.gameVersions?.Any(v => v.Equals(loader, StringComparison.OrdinalIgnoreCase)) == true)
+            .Where(f => McVersions.Matches(f.gameVersions, gameVersion))
             .OrderByDescending(f => DateTime.TryParse(f.fileDate, out var d) ? d : DateTime.MinValue)
             .FirstOrDefault();
     }
 
-    public static string LoadersOf(CFFile f)
+    public static string LoadersOf(CFFile f, string? first = null)
     {
         string[] known = { "Fabric", "Forge", "NeoForge", "Quilt", "OptiFine" };
         var found = (f.gameVersions ?? new List<string>()).Where(v => known.Contains(v)).Distinct().ToList();
+        var i = first == null ? -1 : found.FindIndex(v => v.Equals(first, StringComparison.OrdinalIgnoreCase));
+        if (i > 0)
+        {
+            var v = found[i];
+            found.RemoveAt(i);
+            found.Insert(0, v);
+        }
         return found.Count > 0 ? string.Join(" ", found) : "";
     }
 
-    public static List<string> VersionsOf(CFFile f) =>
-        (f.gameVersions ?? new List<string>())
-            .Where(v => v.Length > 3 && (char.IsDigit(v[0]) || v[0] == 'b'))
-            .Take(2).ToList();
+    public static List<string> VersionsOf(CFFile f, string? first = null)
+    {
+        var vs = (f.gameVersions ?? new List<string>())
+            .Where(v => v.Length > 3 && (char.IsDigit(v[0]) || v[0] == 'b')).ToList();
+        var key = first == null ? null : McVersions.Match(vs, first);
+        if (key != null && vs.Remove(key)) vs.Insert(0, key);
+        return vs.Take(2).ToList();
+    }
+
+    public static async Task<List<CFFile>> GetFilesAsync(long modId, int pageSize = 50, CancellationToken ct = default,
+        string? gameVersion = null)
+    {
+        var url = $"{Base}/mods/{modId}/files?pageSize={pageSize}";
+        if (!string.IsNullOrEmpty(gameVersion)) url += McVersions.Query("gameVersion", gameVersion);
+        var raw = await GetAsync(url, ct);
+        return Json.Load<CFList<CFFile>>(raw)?.data ?? new();
+    }
 
     public static async Task<string> ResolveDownloadUrlAsync(long projectId, long fileId, CancellationToken ct = default)
     {
@@ -87,10 +116,17 @@ public static class CurseForgeService
     }
 
     public static async Task InstallAsync(Instance inst, CFMod m, string mcVersion, string loader,
-        ContentType type, CancellationToken ct = default)
+        ContentType type, long pinnedFile = 0, CancellationToken ct = default)
     {
-        var f = PickFile(m, loader, type)
-            ?? throw new Exception($"No compatible file for “{m.name}” on {mcVersion} ({loader}).");
+        var f = pinnedFile != 0
+            ? (await GetFilesAsync(m.id, ct: ct)).FirstOrDefault(x => x.id == pinnedFile)
+            : PickFile(m, loader, type, mcVersion);
+        if (f == null && pinnedFile == 0)
+            f = PickFrom(await GetFilesAsync(m.id, ct: ct, gameVersion: mcVersion), loader, type, mcVersion);
+        if (f == null)
+            throw new Exception(pinnedFile != 0
+                ? $"“{m.name}” no longer has that file."
+                : $"No compatible file for “{m.name}” on {mcVersion} ({loader}).");
         var url = string.IsNullOrEmpty(f.downloadUrl)
             ? await ResolveDownloadUrlAsync(f.modId, f.id, ct)
             : f.downloadUrl;
@@ -102,12 +138,12 @@ public static class CurseForgeService
     }
 
     public static async Task<string> DownloadModpackAsync(long modId, string title,
-        IProgress<string>? status = null, CancellationToken ct = default)
+        IProgress<string>? status = null, long fileId = 0, CancellationToken ct = default)
     {
-        var raw = await GetAsync($"{Base}/mods/{modId}/files?pageSize=50", ct);
-        var files = Json.Load<CFList<CFFile>>(raw)?.data ?? new();
-        var pack = files.FirstOrDefault(f => f.fileName.EndsWith(".zip", StringComparison.OrdinalIgnoreCase))
-            ?? throw new Exception($"“{title}” has no downloadable modpack file.");
+        var files = await GetFilesAsync(modId, ct: ct);
+        var packs = files.Where(f => f.fileName.EndsWith(".zip", StringComparison.OrdinalIgnoreCase)).ToList();
+        var pack = fileId != 0 ? packs.FirstOrDefault(f => f.id == fileId) : packs.FirstOrDefault();
+        if (pack == null) throw new Exception($"“{title}” has no downloadable modpack file.");
         var url = string.IsNullOrEmpty(pack.downloadUrl)
             ? await ResolveDownloadUrlAsync(modId, pack.id, ct)
             : pack.downloadUrl;
@@ -130,29 +166,6 @@ public static class CurseForgeService
                 ?? throw new Exception("Not a CurseForge modpack (no manifest.json)");
             manifest = JsonSerializer.Deserialize<CFManifest>(
                 new StreamReader(entry.Open()).ReadToEnd(), Json.Options)!;
-
-            var cfg = inst.Config;
-            if (manifest.minecraft != null)
-            {
-                if (!string.IsNullOrEmpty(manifest.minecraft.version)) cfg.MCVersion = manifest.minecraft.version;
-                var loader = manifest.minecraft.modLoaders?.FirstOrDefault(l => l.primary)
-                             ?? manifest.minecraft.modLoaders?.FirstOrDefault();
-                if (loader?.id != null)
-                {
-                    var dash = loader.id.LastIndexOf('-');
-                    var name = (dash > 0 ? loader.id[..dash] : loader.id).ToLowerInvariant();
-                    var ver = dash > 0 ? loader.id[(dash + 1)..] : "";
-                    cfg.Loader = name switch
-                    {
-                        "fabric" => LoaderKind.Fabric,
-                        "forge" => LoaderKind.Forge,
-                        "neoforge" => LoaderKind.NeoForge,
-                        "quilt" => LoaderKind.Quilt,
-                        _ => LoaderKind.Vanilla,
-                    };
-                    cfg.LoaderVersion = ver;
-                }
-            }
 
             var items = new List<DownloadItem>();
             var files = (manifest.files ?? new()).Where(f => f.projectID > 0).ToList();

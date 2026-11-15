@@ -15,7 +15,6 @@ public class AppSettings
     public List<Account> Accounts { get; set; } = new();
     public string? ActiveAccountId { get; set; }
     public string? JavaPath { get; set; }
-    public int MinMemoryMb { get; set; } = 1024;
     public int MaxMemoryMb { get; set; } = 4096;
     public string JVMArguments { get; set; } = "";
     public string GameArguments { get; set; } = "";

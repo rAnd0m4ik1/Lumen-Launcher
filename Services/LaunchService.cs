@@ -194,9 +194,10 @@ public class LaunchService
             }
         }
         if (!hasX)
-            defaults.Insert(0, $"-Xmx{maxMb}M");
-        if (!hasX && _settings.MinMemoryMb > 0)
-            defaults.Insert(0, $"-Xms{_settings.MinMemoryMb}M");
+        {
+            defaults.Insert(0, "-Xms512M");
+            defaults.Insert(1, $"-Xmx{maxMb}M");
+        }
         if (defaults.Count > 0)
             jvm.InsertRange(0, defaults);
 

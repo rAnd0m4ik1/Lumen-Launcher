@@ -29,12 +29,19 @@ public partial class SettingsView : UserControl
     private readonly List<(string Hex, Icon Check, Button Ring)> _fxSwatches = new();
     private readonly List<(BackgroundPreset Preset, Border Preview, Button Ring, TextBlock Label)> _bgSwatches = new();
 
+    private const double MemFloorMb = 512;
+    private const double MemCapture = 0.09;
+    private double _memCeilMb = 1024;
+    private double _memSpan = 1;
+    private double _memScaleWidth = -1;
+
     public SettingsView()
     {
         InitializeComponent();
         BuildSwatches(AccentPalette, AccentPaletteColors.Select(h => (h, h)), "Accent", AccentSwatch_Click, _swatches);
         BuildSwatches(FxPalette, FxColorCatalog.All.Select(c => (c.Hex, c.Label)), "Effect color", FxSwatch_Click, _fxSwatches);
         BuildBackgroundPalette();
+        InitMemScale();
         Loaded += (_, _) => Refresh();
         WireAutoSave();
     }
@@ -43,8 +50,14 @@ public partial class SettingsView : UserControl
 
     private void WireAutoSave()
     {
-        foreach (var tb in new[] { JavaBox, MinMemBox, MaxMemBox, JvmBox, GameBox })
+        foreach (var tb in new[] { JvmBox, GameBox })
             tb.TextChanged += (_, _) => ApplyLive();
+        JavaBox.TextChanged += (_, _) => { ApplyLive(); RefreshJavaStatus(); };
+        MaxMemBox.TextChanged += (_, _) => MemBox_Changed();
+        _memTimer = new System.Windows.Threading.DispatcherTimer { Interval = TimeSpan.FromMilliseconds(250) };
+        _memTimer.Tick += MemTimer_Tick;
+        _memBoxTimer = new System.Windows.Threading.DispatcherTimer { Interval = TimeSpan.FromMilliseconds(400) };
+        _memBoxTimer.Tick += MemBox_Tick;
         CloseOnLaunch.Checked += (_, _) => ApplyLive();
         CloseOnLaunch.Unchecked += (_, _) => ApplyLive();
     }
@@ -54,41 +67,222 @@ public partial class SettingsView : UserControl
         if (_suppressAutoSave) return;
         var s = AppServices.Settings;
         s.JavaPath = string.IsNullOrWhiteSpace(JavaBox.Text) ? null : JavaBox.Text.Trim();
-        if (int.TryParse(MinMemBox.Text, out var mn) && mn > 0) s.MinMemoryMb = mn;
-        if (int.TryParse(MaxMemBox.Text, out var mx) && mx > 0) s.MaxMemoryMb = mx;
+        s.MaxMemoryMb = MbAt(MaxMemSlider.Value);
+        _memSavedMb = s.MaxMemoryMb;
         s.JVMArguments = JvmBox.Text;
         s.GameArguments = GameBox.Text;
         s.CloseOnLaunch = CloseOnLaunch.IsChecked == true;
         s.Save();
-        FlashSaved();
-        var java = JavaLocator.Find(s.JavaPath);
-        JavaDetected.Text = java == null
-            ? "No Java found yet — the launcher will download a portable Temurin JDK into <launcher folder>\\java automatically when you press Play."
-            : $"Detected: {java} (Java {JavaLocator.JavaMajorVersion(java)})";
     }
 
-    private System.Windows.Threading.DispatcherTimer? _savedTimer;
+    private int _javaProbeSeq;
 
-    private void FlashSaved()
+    private void RefreshJavaStatus()
     {
-        SavedText.Visibility = Visibility.Visible;
-        SavedText.Opacity = 1;
-        _savedTimer ??= new System.Windows.Threading.DispatcherTimer
+        var path = AppServices.Settings.JavaPath;
+        var seq = ++_javaProbeSeq;
+        _ = System.Threading.Tasks.Task.Run(() =>
         {
-            Interval = TimeSpan.FromSeconds(1.6),
-        };
-        _savedTimer.Stop();
-        _savedTimer.Tick += OnSavedFade;
-        _savedTimer.Start();
+            var java = JavaLocator.Find(path);
+            var text = java == null
+                ? "No Java found yet — the launcher will download a portable Temurin JDK into <launcher folder>\\java automatically when you press Play."
+                : $"Detected: {java} (Java {JavaLocator.JavaMajorVersion(java)})";
+            Dispatcher.BeginInvoke(() =>
+            {
+                if (seq == _javaProbeSeq) JavaDetected.Text = text;
+            });
+        });
     }
 
-    private void OnSavedFade(object? sender, EventArgs e)
+    private int MbAt(double stop) =>
+        (int)Math.Round(Math.Min(MemFloorMb * Math.Pow(2, Math.Clamp(stop, 0, _memSpan)), _memCeilMb));
+
+    private double StopOf(int mb) =>
+        Math.Clamp(Math.Log2(Math.Clamp((double)mb, MemFloorMb, _memCeilMb) / MemFloorMb), 0, _memSpan);
+
+    private List<double> MemMarks()
     {
-        _savedTimer!.Stop();
-        _savedTimer.Tick -= OnSavedFade;
-        var fade = new DoubleAnimation(0, TimeSpan.FromSeconds(0.5));
-        fade.Completed += (_, _) => SavedText.Visibility = Visibility.Collapsed;
-        SavedText.BeginAnimation(OpacityProperty, fade);
+        var stops = new List<double>();
+        for (var s = 0.0; s < _memSpan - 0.02; s += 1) stops.Add(s);
+        stops.Add(_memSpan);
+        return stops;
+    }
+
+    private static double PhysicalMb()
+    {
+        var bytes = GC.GetGCMemoryInfo().TotalAvailableMemoryBytes;
+        return bytes > 1L << 30 ? Math.Round(bytes / (1024.0 * 1024.0)) : 16384;
+    }
+
+    private void InitMemScale()
+    {
+        _memCeilMb = PhysicalMb();
+        _memSpan = Math.Max(1, Math.Log2(_memCeilMb / MemFloorMb));
+        MaxMemSlider.Maximum = _memSpan;
+        MemScale.SizeChanged += (_, _) => LayoutMemScale();
+    }
+
+    private void MaxMem_Loaded(object sender, RoutedEventArgs e) => LayoutMemScale();
+
+    private void MaxMem_Size(object sender, SizeChangedEventArgs e) => LayoutMemScale();
+
+    private void LayoutMemScale()
+    {
+        MaxMemSlider.ApplyTemplate();
+        var ticks = MaxMemSlider.Template?.FindName("TickLayer", MaxMemSlider) as Canvas;
+        var track = MaxMemSlider.Template?.FindName("PART_Track", MaxMemSlider) as System.Windows.Controls.Primitives.Track;
+        var width = MemScale.ActualWidth;
+        if (ticks == null || track == null || width <= 0) return;
+
+        var half = track.Thumb?.ActualWidth / 2 ?? 0;
+        var usable = width - half * 2;
+        if (usable <= 0) return;
+        if (MemScale.Children.Count > 0 && Math.Abs(width - _memScaleWidth) < 0.5) return;
+        _memScaleWidth = width;
+
+        ticks.Children.Clear();
+        MemScale.Children.Clear();
+        var marks = MemMarks();
+        var subtle = (Style)FindResource("Subtle");
+
+        for (var i = 0; i < marks.Count; i++)
+        {
+            var x = half + marks[i] / _memSpan * usable;
+
+            var dash = new Border
+            {
+                Width = 2,
+                Height = 9,
+                CornerRadius = new CornerRadius(1),
+                Opacity = 0.45,
+            };
+            dash.SetResourceReference(Border.BackgroundProperty, "TextBrush");
+            Canvas.SetLeft(dash, x - 1);
+            Canvas.SetTop(dash, (ticks.ActualHeight - 9) / 2);
+            ticks.Children.Add(dash);
+
+            var label = new TextBlock { Style = subtle, FontSize = 11, Text = MbAt(marks[i]).ToString() };
+            label.Measure(new Size(double.PositiveInfinity, double.PositiveInfinity));
+            var left = i == 0
+                ? 0
+                : i == marks.Count - 1
+                    ? width - label.DesiredSize.Width
+                    : x - label.DesiredSize.Width / 2;
+            Canvas.SetLeft(label, left);
+            MemScale.Children.Add(label);
+        }
+    }
+
+    private System.Windows.Threading.DispatcherTimer? _memTimer;
+    private double _memParked = -1;
+    private double _memTravel;
+    private bool _memApplying;
+    private int _memShownMb = -1;
+    private int _memSavedMb = -1;
+
+    private void ShowMemMb(int mb)
+    {
+        if (mb == _memShownMb || MaxMemBox.IsKeyboardFocusWithin) return;
+        SetMemText(mb);
+    }
+
+    private void SetMemText(int mb)
+    {
+        _memShownMb = mb;
+        MaxMemBox.Text = mb.ToString();
+    }
+
+    private void MaxMem_Changed(object sender, RoutedPropertyChangedEventArgs<double> e)
+    {
+        if (_memApplying) return;
+
+        var raw = e.NewValue;
+        if (_memParked >= 0)
+        {
+            _memTravel += raw - e.OldValue;
+            if (Math.Abs(_memTravel) >= MemCapture)
+            {
+                raw = Math.Clamp(_memParked + _memTravel, 0, _memSpan);
+                _memParked = -1;
+                _memTravel = 0;
+            }
+            else
+            {
+                raw = _memParked;
+            }
+        }
+        else
+        {
+            var nearest = Math.Round(raw);
+            if (Math.Abs(raw - nearest) < MemCapture)
+            {
+                _memParked = Math.Clamp(nearest, 0, _memSpan);
+                _memTravel = 0;
+                raw = _memParked;
+            }
+        }
+
+        if (Math.Abs(raw - MaxMemSlider.Value) > 1e-9)
+        {
+            _memApplying = true;
+            MaxMemSlider.Value = raw;
+            _memApplying = false;
+        }
+
+        ShowMemMb(MbAt(raw));
+        if (_suppressAutoSave || _memTimer == null) return;
+        _memTimer.Stop();
+        _memTimer.Start();
+    }
+
+    private void MemTimer_Tick(object? sender, EventArgs e)
+    {
+        _memTimer!.Stop();
+        _memParked = -1;
+        _memTravel = 0;
+        if (MbAt(MaxMemSlider.Value) != _memSavedMb) ApplyLive();
+    }
+
+    private void MaxMemBox_KeyDown(object sender, System.Windows.Input.KeyEventArgs e)
+    {
+        if (e.Key != System.Windows.Input.Key.Enter) return;
+        MaxMemBox_Commit(sender, new RoutedEventArgs());
+        MaxMemBox.MoveFocus(new System.Windows.Input.TraversalRequest(System.Windows.Input.FocusNavigationDirection.Next));
+    }
+
+    private void MaxMemBox_Commit(object sender, RoutedEventArgs e)
+    {
+        var mb = int.TryParse(MaxMemBox.Text.Trim(), out var typed)
+            ? Math.Clamp(typed, (int)MemFloorMb, (int)_memCeilMb)
+            : MbAt(MaxMemSlider.Value);
+        ApplyMemMb(mb);
+        SetMemText(MbAt(MaxMemSlider.Value));
+    }
+
+    private System.Windows.Threading.DispatcherTimer? _memBoxTimer;
+
+    private void MemBox_Changed()
+    {
+        if (_memBoxTimer == null) return;
+        _memBoxTimer.Stop();
+        _memBoxTimer.Start();
+    }
+
+    private void MemBox_Tick(object? sender, EventArgs e)
+    {
+        _memBoxTimer!.Stop();
+        if (int.TryParse(MaxMemBox.Text.Trim(), out var mb) && mb >= (int)MemFloorMb && mb != MbAt(MaxMemSlider.Value)) ApplyMemMb(mb);
+    }
+
+    private void ApplyMemMb(int mb)
+    {
+        _memParked = -1;
+        _memTravel = 0;
+        _memApplying = true;
+        MaxMemSlider.Value = StopOf(mb);
+        _memApplying = false;
+        ShowMemMb(MbAt(MaxMemSlider.Value));
+        if (!_suppressAutoSave && MbAt(MaxMemSlider.Value) != _memSavedMb) ApplyLive();
     }
 
     private static readonly ControlTemplate RingTemplate = CreateRingTemplate();
@@ -245,7 +439,6 @@ public partial class SettingsView : UserControl
         s.BackgroundFx = mode.ToString().ToLowerInvariant();
         s.Save();
         MainWindow.Main?.SetBackgroundFx(mode);
-        FlashSaved();
     }
 
     private void BackgroundSwatch_Click(object sender, RoutedEventArgs e)
@@ -256,7 +449,6 @@ public partial class SettingsView : UserControl
         s.Save();
         ThemeService.ApplyBackground(BackgroundCatalog.Resolve(id, ThemeService.Current.Light), ThemeService.CurrentStyle);
         UpdateBackgroundChecks();
-        FlashSaved();
     }
 
     private void BgStyle_Checked(object sender, RoutedEventArgs e)
@@ -268,7 +460,6 @@ public partial class SettingsView : UserControl
         s.Save();
         ThemeService.ApplyBackground(ThemeService.CurrentBackground, style);
         RefreshBackgroundPreviews(style);
-        FlashSaved();
     }
 
     private void ThemeMode_Checked(object sender, RoutedEventArgs e)
@@ -281,7 +472,6 @@ public partial class SettingsView : UserControl
         s.Save();
         ThemeService.ApplyTheme(s.ThemeMode, s.BackgroundPreset, s.BackgroundStyle, s.AccentColor);
         UpdateBackgroundChecks();
-        FlashSaved();
     }
 
     private void UpdateBackgroundChecks()
@@ -338,7 +528,6 @@ public partial class SettingsView : UserControl
         s.Save();
         ThemeService.Apply(hex);
         UpdateAccentChecks();
-        FlashSaved();
     }
 
     private void FxSwatch_Click(object sender, RoutedEventArgs e)
@@ -349,7 +538,6 @@ public partial class SettingsView : UserControl
         s.Save();
         MainWindow.Main?.RefreshBackgroundFxColors();
         UpdateFxChecks();
-        FlashSaved();
     }
 
     private void UpdateAccentChecks() => UpdateSwatchChecks(_swatches, AppServices.Settings.AccentColor);
@@ -371,8 +559,18 @@ public partial class SettingsView : UserControl
         _suppressAutoSave = true;
         var s = AppServices.Settings;
         JavaBox.Text = s.JavaPath ?? "";
-        MinMemBox.Text = s.MinMemoryMb.ToString();
-        MaxMemBox.Text = s.MaxMemoryMb.ToString();
+        _memParked = -1;
+        _memTravel = 0;
+        _memApplying = true;
+        MaxMemSlider.Value = StopOf(s.MaxMemoryMb);
+        _memApplying = false;
+        SetMemText(MbAt(MaxMemSlider.Value));
+        if (s.MaxMemoryMb != MbAt(MaxMemSlider.Value))
+        {
+            s.MaxMemoryMb = MbAt(MaxMemSlider.Value);
+            s.Save();
+        }
+        _memSavedMb = s.MaxMemoryMb;
         JvmBox.Text = s.JVMArguments;
         GameBox.Text = s.GameArguments;
         CloseOnLaunch.IsChecked = s.CloseOnLaunch;
@@ -392,10 +590,7 @@ public partial class SettingsView : UserControl
         s.FxColor = FxColorCatalog.Resolve(s.FxColor);
         UpdateFxChecks();
         RootDirText.Text = "Data directory: " + s.RootDir;
-        var java = JavaLocator.Find(s.JavaPath);
-        JavaDetected.Text = java == null
-            ? "No Java found yet — the launcher will download a portable Temurin JDK into <launcher folder>\\java automatically when you press Play."
-            : $"Detected: {java} (Java {JavaLocator.JavaMajorVersion(java)})";
+        RefreshJavaStatus();
         _suppressAutoSave = false;
     }
 

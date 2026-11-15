@@ -5,6 +5,7 @@ using System.Net.Http;
 using System.Text;
 using System.Text.Json;
 using CraftDeck.Models;
+using CraftDeck.Models.CurseForge;
 using CraftDeck.Models.Modrinth;
 
 namespace CraftDeck.Services;
@@ -15,18 +16,19 @@ public static class ModrinthService
 {
     private const string Base = "https://api.modrinth.com/v2";
 
-    public static async Task<List<Hit>> SearchAsync(string query, ContentType type,
-        string? gameVersion = null, string? loader = null, int limit = 40, int offset = 0)
+    public static async Task<(List<Hit> Hits, int Total)> SearchAsync(string query, ContentType type,
+        string? gameVersion = null, string? loader = null, int limit = 20, int offset = 0)
     {
         var facets = new List<List<string>> { new() { "project_type:" + TypeSlug(type) } };
-        if (!string.IsNullOrEmpty(gameVersion)) facets.Add(new List<string> { "versions:" + gameVersion });
+        if (!string.IsNullOrEmpty(gameVersion))
+            facets.Add(McVersions.Line(gameVersion).Select(v => "versions:" + v).ToList());
         if (type == ContentType.Mod && !string.IsNullOrEmpty(loader) && loader is not ("Vanilla" or "vanilla"))
             facets.Add(new List<string> { "categories:" + loader.ToLower() });
         var url = $"{Base}/search?query={Uri.EscapeDataString(query)}&limit={limit}&offset={offset}" +
                   $"&index={(string.IsNullOrEmpty(query) ? "downloads" : "relevance")}" +
                   $"&facets={WebUtility.UrlEncode(JsonSerializer.Serialize(facets))}";
         var resp = await Http.GetJsonAsync<SearchResponse>(url);
-        return resp.hits ?? new();
+        return (resp.hits ?? new(), resp.total_hits);
     }
 
     public static string TypeSlug(ContentType t) => t switch
@@ -49,12 +51,15 @@ public static class ModrinthService
     public static async Task<List<ProjectVersion>> GetVersionsAsync(string projectId) =>
         await Http.GetJsonAsync<List<ProjectVersion>>($"{Base}/project/{projectId}/version");
 
+    public static async Task<ProjectVersion?> GetVersionAsync(string projectId, string versionId) =>
+        (await GetVersionsAsync(projectId)).FirstOrDefault(v => v.id == versionId);
+
     public static async Task<ProjectVersion?> GetBestFileAsync(string projectId, string mcVersion,
         string loader, ContentType type)
     {
         var versions = await GetVersionsAsync(projectId);
         return versions
-            .Where(v => v.game_versions?.Contains(mcVersion) == true)
+            .Where(v => McVersions.Matches(v.game_versions, mcVersion))
             .Where(v => type is ContentType.Shader or ContentType.ResourcePack or ContentType.DataPack
                         || v.loaders?.Contains(loader.ToLower()) == true
                         || (loader == "NeoForge" && v.loaders?.Contains("neoforge") == true))
@@ -74,21 +79,27 @@ public static class ModrinthService
     }
 
     public static async Task InstallAsync(Instance inst, Hit hit, string mcVersion, string loader,
-        ContentType type, CancellationToken ct = default)
+        ContentType type, string? pinnedVersion = null, CancellationToken ct = default)
     {
-        var pv = await GetBestFileAsync(hit.project_id, mcVersion, loader, type)
-            ?? throw new Exception($"No compatible file for {hit.title} on {mcVersion} ({loader})");
+        var pv = pinnedVersion != null
+            ? await GetVersionAsync(hit.project_id, pinnedVersion)
+            : await GetBestFileAsync(hit.project_id, mcVersion, loader, type);
+        if (pv == null)
+            throw new Exception(pinnedVersion != null
+                ? $"“{hit.title}” no longer has that file."
+                : $"No compatible file for {hit.title} on {mcVersion} ({loader})");
         await DownloadFileAsync(pv, DirFor(inst, type), ct);
     }
 
     public static async Task<string> DownloadModpackAsync(string projectId, string title,
-        IProgress<string>? status = null, CancellationToken ct = default)
+        IProgress<string>? status = null, string? versionId = null, CancellationToken ct = default)
     {
         var versions = await GetVersionsAsync(projectId);
         bool IsPack(ModrinthFile f) =>
             f.filename.EndsWith(".mr", StringComparison.OrdinalIgnoreCase) ||
             f.filename.EndsWith(".mrpack", StringComparison.OrdinalIgnoreCase);
         var pv = versions
+            .Where(v => versionId == null || v.id == versionId)
             .OrderByDescending(v => v.featured)
             .ThenByDescending(v => v.date_published)
             .FirstOrDefault(v => v.files?.Any(IsPack) == true)
@@ -101,6 +112,41 @@ public static class ModrinthService
         var d = new Downloader(2);
         await d.RunAsync(new[] { new DownloadItem(file.url, target, file.size) }, ct);
         return target;
+    }
+
+    public record PackInfo(string? McVersion, string? Loader, string? LoaderVersion);
+
+    public static PackInfo PeekPack(string path)
+    {
+        using var zip = System.IO.Compression.ZipFile.OpenRead(path);
+        if (zip.GetEntry("modrinth.index.json") is { } mr)
+        {
+            var index = JsonSerializer.Deserialize<ModpackIndex>(
+                new StreamReader(mr.Open()).ReadToEnd(), Json.Options)!;
+            var deps = index.dependencies;
+            var loaderKey = deps.Keys.FirstOrDefault(k => !k.Equals("minecraft", StringComparison.OrdinalIgnoreCase));
+            var loader = loaderKey == null ? null
+                : loaderKey.EndsWith("-loader", StringComparison.OrdinalIgnoreCase)
+                    ? loaderKey[..^"-loader".Length] : loaderKey;
+            string? loaderVer = null;
+            if (loaderKey != null && deps.TryGetValue(loaderKey, out var lv) && lv.Length > 0) loaderVer = lv;
+            string? mcVer = null;
+            if (deps.TryGetValue("minecraft", out var mc) && mc.Length > 0) mcVer = mc;
+            return new PackInfo(mcVer, loader?.ToLowerInvariant(), loaderVer);
+        }
+        if (zip.GetEntry("manifest.json") is { } cf)
+        {
+            var manifest = JsonSerializer.Deserialize<CFManifest>(
+                new StreamReader(cf.Open()).ReadToEnd(), Json.Options)!;
+            var id = (manifest.minecraft?.modLoaders?.FirstOrDefault(l => l.primary)
+                      ?? manifest.minecraft?.modLoaders?.FirstOrDefault())?.id;
+            var dash = id?.LastIndexOf('-') ?? -1;
+            return new PackInfo(
+                manifest.minecraft?.version,
+                dash > 0 ? id![..dash].ToLowerInvariant() : id?.ToLowerInvariant(),
+                dash > 0 ? id![(dash + 1)..] : null);
+        }
+        return new PackInfo(null, null, null);
     }
 
     public static async Task InstallModpackAsync(Instance inst, string mrFilePath,
@@ -123,23 +169,6 @@ public static class ModrinthService
         var entry = zip.GetEntry("modrinth.index.json")!;
         var index = JsonSerializer.Deserialize<ModpackIndex>(
             new StreamReader(entry.Open()).ReadToEnd(), Json.Options)!;
-
-        var cfg = inst.Config;
-        if (index.gameVersions.TryGetValue("minecraft", out var mc) && !string.IsNullOrEmpty(mc))
-            cfg.MCVersion = mc;
-        var loaderKey = index.gameVersions.Keys.FirstOrDefault(k => k != "minecraft");
-        if (loaderKey != null)
-        {
-            cfg.Loader = loaderKey switch
-            {
-                "fabric" => LoaderKind.Fabric,
-                "forge" => LoaderKind.Forge,
-                "neoforge" => LoaderKind.NeoForge,
-                "quilt" => LoaderKind.Quilt,
-                _ => cfg.Loader,
-            };
-            cfg.LoaderVersion = index.gameVersions[loaderKey];
-        }
 
         var items = new List<DownloadItem>();
         foreach (var f in index.files)
@@ -180,7 +209,7 @@ public static class ModrinthService
 
     public class ModpackIndex
     {
-        public Dictionary<string, string> gameVersions { get; set; } = new();
+        public Dictionary<string, string> dependencies { get; set; } = new();
         public List<ModpackFileEntry> files { get; set; } = new();
     }
 

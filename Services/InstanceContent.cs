@@ -13,26 +13,31 @@ public record ContentItem(string Title, string Desc, string Meta, string Letter,
 {
     public Visibility IconVis => Icon != null ? Visibility.Visible : Visibility.Collapsed;
     public Visibility LetterVis => Icon != null ? Visibility.Collapsed : Visibility.Visible;
+    public Visibility DescVis => string.IsNullOrEmpty(Desc) ? Visibility.Collapsed : Visibility.Visible;
+    public Visibility MetaVis => string.IsNullOrEmpty(Meta) ? Visibility.Collapsed : Visibility.Visible;
 }
 
 public static class InstanceContent
 {
     public static List<ContentItem> Mods(string dir) => Files(dir, f =>
     {
-        var (name, desc) = ReadModMeta(f);
-        return new ContentItem(name, desc, $"{SizeOf(f)} · {DateOf(f)}", LetterOf(name), IconOf(f, ModIconPath(f)), f);
+        var meta = ReadModMeta(f);
+        var name = string.IsNullOrWhiteSpace(meta.Name) ? Path.GetFileName(f) : meta.Name;
+        return new ContentItem(name, IdentityLine(f, meta.Version, meta.Loader, meta.Mc), "",
+            LetterOf(name), IconOf(f, ModIconPath(f)), f);
     });
 
     public static List<ContentItem> ResourcePacks(string dir) => Files(dir, f =>
     {
-        var (desc, icon) = ReadPackMeta(f);
-        return new ContentItem(Stem(f), desc, $"{SizeOf(f)} · {DateOf(f)}", LetterOf(Stem(f)), IconOf(f, icon), f);
+        var (_, icon) = ReadPackMeta(f);
+        var name = Stem(f);
+        return new ContentItem(name, IdentityLine(f, null, null, null), "", LetterOf(name), IconOf(f, icon), f);
     });
 
     public static List<ContentItem> Shaders(string dir) => Files(dir, f =>
     {
         var name = Stem(f);
-        return new ContentItem(name, "", $"{SizeOf(f)} · {DateOf(f)}", LetterOf(name), null, f);
+        return new ContentItem(name, IdentityLine(f, null, null, null), "", LetterOf(name), null, f);
     });
 
     public static List<ContentItem> Worlds(string savesDir)
@@ -66,62 +71,148 @@ public static class InstanceContent
         return items;
     }
 
-    private static (string Name, string Desc) ReadModMeta(string file)
+    private record ModMeta(string Name, string? Version, string? Loader, string? Mc);
+
+    private static ModMeta ReadModMeta(string file)
     {
-        var fallback = Path.GetFileName(file);
-        if (!IsZip(file)) return (fallback, "");
+        var fallback = new ModMeta(Path.GetFileName(file), null, null, null);
+        if (!IsZip(file)) return ReadNameFromDir(file) ?? fallback;
         try
         {
             using var zip = ZipFile.OpenRead(file);
-            (string Name, string Desc)? Try(string entry, Func<string, (string Name, string Desc)?> parse)
+            ModMeta? Try(string entry, string? loader, Func<string, (string Name, string? Version, string? Mc)> parse)
             {
                 var text = ReadEntry(zip, entry);
                 if (text == null) return null;
                 try
                 {
                     var found = parse(text);
-                    return found is { } f && !string.IsNullOrWhiteSpace(f.Name)
-                        ? (f.Name.Trim(), f.Desc?.Trim() ?? "")
-                        : null;
+                    return string.IsNullOrWhiteSpace(found.Name)
+                        ? null
+                        : new ModMeta(found.Name.Trim(), found.Version?.Trim(), loader, found.Mc);
                 }
                 catch { return null; }
             }
-            return Try("fabric.mod.json", JsonNameDesc)
-                   ?? Try("quilt.mod.json", q => JsonNameDesc(JsonDocument.Parse(q).RootElement
-                        .TryGetProperty("metadata", out var m) ? m.ToString() : q))
-                   ?? Try("META-INF/mods.toml", TomlNameDesc)
-                   ?? Try("META-INF/neoforge.mods.toml", TomlNameDesc)
-                   ?? Try("mcmod.info", JsonNameDesc)
-                   ?? Try("plugin.yml", YamlNameDesc)
-                   ?? (fallback, "");
+            return Try("fabric.mod.json", "Fabric", FabricJson)
+                   ?? Try("quilt.mod.json", "Quilt", QuiltJson)
+                   ?? Try("META-INF/neoforge.mods.toml", "NeoForge", TomlMeta)
+                   ?? Try("META-INF/mods.toml", "Forge", TomlMeta)
+                   ?? Try("mcmod.info", null, McModInfo)
+                   ?? Try("plugin.yml", null, YamlMeta)
+                   ?? fallback;
         }
-        catch { return (fallback, ""); }
+        catch { return fallback; }
     }
 
-    private static (string Name, string Desc)? JsonNameDesc(string text)
+    private static ModMeta? ReadNameFromDir(string dir)
+    {
+        var json = Path.Combine(dir, "fabric.mod.json");
+        if (!File.Exists(json)) return null;
+        try
+        {
+            var found = FabricJson(File.ReadAllText(json));
+            return string.IsNullOrWhiteSpace(found.Name)
+                ? null
+                : new ModMeta(found.Name.Trim(), found.Version?.Trim(), "Fabric", found.Mc);
+        }
+        catch { return null; }
+    }
+
+    private static string? Str(JsonElement el, params string[] keys) => keys
+        .Select(k => el.TryGetProperty(k, out var v) && v.ValueKind == JsonValueKind.String ? v.GetString() : null)
+        .FirstOrDefault(s => !string.IsNullOrWhiteSpace(s));
+
+    private static (string Name, string? Version, string? Mc) FabricJson(string text)
+    {
+        using var doc = JsonDocument.Parse(text);
+        var root = doc.RootElement;
+        string? mc = null;
+        if (root.TryGetProperty("depends", out var depends) && depends.ValueKind == JsonValueKind.Object)
+            mc = VersionIn(Str(depends, "minecraft", "gameVersion"));
+        return (Str(root, "name", "modid") ?? "", Str(root, "version"), mc);
+    }
+
+    private static (string Name, string? Version, string? Mc) QuiltJson(string text)
+    {
+        using var doc = JsonDocument.Parse(text);
+        var meta = doc.RootElement.TryGetProperty("metadata", out var m) ? m : doc.RootElement;
+        return (Str(meta, "name", "id") ?? "", Str(meta, "version"), null);
+    }
+
+    private static (string Name, string? Version, string? Mc) McModInfo(string text)
     {
         using var doc = JsonDocument.Parse(text);
         var root = doc.RootElement.ValueKind == JsonValueKind.Array && doc.RootElement.GetArrayLength() > 0
             ? doc.RootElement[0] : doc.RootElement;
-        string? Get(params string[] keys) => keys
-            .Select(k => root.TryGetProperty(k, out var v) && v.ValueKind == JsonValueKind.String ? v.GetString() : null)
-            .FirstOrDefault(s => !string.IsNullOrWhiteSpace(s));
-        var name = Get("name", "modid", "id", "displayName");
-        return name == null ? null : (name, Get("description", "summary") ?? "");
+        return (Str(root, "name", "modid") ?? "", Str(root, "version"), VersionIn(Str(root, "mcversion")));
     }
 
-    private static (string Name, string Desc)? TomlNameDesc(string text)
+    private static (string Name, string? Version, string? Mc) TomlMeta(string text)
     {
-        var name = Regex.Match(text, "(?m)^\\s*displayName\\s*=\\s*\"([^\"]*)\"").Groups[1].Value;
-        var desc = Regex.Match(text, "(?m)^\\s*description\\s*=\\s*(?:\"\"\"\\s*)?\"?([^\"\r\n]*)").Groups[1].Value;
-        return string.IsNullOrWhiteSpace(name) ? null : (name, desc.Trim());
+        string Field(params string[] keys) => keys
+            .Select(k => Regex.Match(text, $@"(?mi)^\s*{k}\s*=\s*""([^""]*)""").Groups[1].Value)
+            .FirstOrDefault(s => s.Length > 0) ?? "";
+        var name = Field("displayName");
+        var version = Field("version");
+        return (name, version.Length == 0 ? null : version, VersionIn(Field("mcVersion", "minecraft")));
     }
 
-    private static (string Name, string Desc)? YamlNameDesc(string text)
+    private static (string Name, string? Version, string? Mc) YamlMeta(string text)
     {
         var name = Regex.Match(text, "(?m)^name:\\s*(.+)$").Groups[1].Value.Trim();
-        var desc = Regex.Match(text, "(?m)^description:\\s*(.+)$").Groups[1].Value.Trim();
-        return name.Length == 0 ? null : (name, desc);
+        var version = Regex.Match(text, "(?m)^version:\\s*(.+)$").Groups[1].Value.Trim();
+        return (name, version.Length == 0 ? null : version, null);
+    }
+
+    private static string? VersionIn(string? range)
+    {
+        if (string.IsNullOrWhiteSpace(range)) return null;
+        var m = Regex.Match(range, @"\d+\.\d+(?:\.\d+)?");
+        return m.Success ? m.Value : null;
+    }
+
+    private static List<string> NumericTokens(string stem) =>
+        Regex.Matches(stem, @"\d+(?:\.\d+)+(?:[.\-]?(?:alpha|beta|rc)[.\-]?\d+)?")
+            .Select(m => m.Value).ToList();
+
+    private static bool LooksLikeMc(string v) =>
+        Regex.IsMatch(v, @"^(1\.\d{1,2}(?:\.\d+)?|2\d(?:\.\d+){1,2})$");
+
+    private static (string? Mc, string? Loader, string? Version) FromFileName(string file)
+    {
+        var stem = Path.GetFileNameWithoutExtension(file);
+        var loader = Regex.Match(stem, "(?i)(?<![a-z])(neoforge|fabric|quilt|forge)(?![a-z])").Groups[1].Value;
+        var mc = Regex.Match(stem, @"(?i)mc[ _.\-]?(\d+\.\d+(?:\.\d+)?)").Groups[1].Value;
+        var rest = NumericTokens(stem).Where(t => t != mc).ToList();
+        return (mc.Length == 0 ? null : mc,
+            loader.Length == 0 ? null : char.ToUpperInvariant(loader[0]) + loader[1..],
+            rest.Count == 0 ? null : rest[0]);
+    }
+
+    private static string? OnlyMc(string stem, string? version) =>
+        NumericTokens(stem).FirstOrDefault(t =>
+            LooksLikeMc(t) && (version == null || !version.Contains(t, StringComparison.Ordinal)));
+
+    private static string IdentityLine(string file, string? version, string? loader, string? mc)
+    {
+        var stem = Path.GetFileNameWithoutExtension(file);
+        var (fileMc, fileLoader, fileVersion) = FromFileName(file);
+        var v = string.IsNullOrWhiteSpace(version) ? fileVersion : version!.Trim();
+        string? suffixMc = null;
+        var cut = Regex.Match(v ?? "", @"^(.+?)\+mc?(\d+\.\d+(?:\.\d+)?)$");
+        if (cut.Success)
+        {
+            v = cut.Groups[1].Value;
+            suffixMc = cut.Groups[2].Value;
+        }
+        var m = string.IsNullOrWhiteSpace(mc) ? fileMc ?? suffixMc : mc!.Trim();
+        m ??= OnlyMc(stem, v);
+        var l = string.IsNullOrWhiteSpace(loader) ? fileLoader : loader;
+        var parts = new List<string>();
+        if (!string.IsNullOrWhiteSpace(v)) parts.Add(v!);
+        if (!string.IsNullOrWhiteSpace(m)) parts.Add($"MC {m}");
+        if (!string.IsNullOrWhiteSpace(l)) parts.Add(l!);
+        return string.Join(" · ", parts);
     }
 
     private static (string Desc, string? Icon) ReadPackMeta(string file)
@@ -335,27 +426,6 @@ public static class InstanceContent
 
     private static string LetterOf(string name) =>
         string.IsNullOrWhiteSpace(name) ? "?" : char.ToUpperInvariant(name.TrimStart()[0]).ToString();
-
-    private static string SizeOf(string f)
-    {
-        long bytes;
-        if (File.Exists(f)) bytes = new FileInfo(f).Length;
-        else if (Directory.Exists(f))
-        {
-            try
-            {
-                bytes = new DirectoryInfo(f).EnumerateFiles("*", SearchOption.AllDirectories).Sum(e => e.Length);
-            }
-            catch { return ""; }
-        }
-        else return "";
-        return bytes switch
-        {
-            >= 1048576 => $"{bytes / 1048576.0:0.#} MB",
-            >= 1024 => $"{bytes / 1024} KB",
-            _ => $"{bytes} B",
-        };
-    }
 
     private static string DateOf(string f)
     {

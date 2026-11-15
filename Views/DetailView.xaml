@@ -48,8 +48,9 @@
                                    Foreground="{DynamicResource TextBrush}"
                                    TextTrimming="CharacterEllipsis" TextWrapping="NoWrap"/>
                         <TextBlock Text="{Binding Desc}" Style="{StaticResource Subtle}" FontSize="12"
-                                   MaxHeight="34" TextTrimming="CharacterEllipsis"/>
-                        <TextBlock Text="{Binding Meta}" Style="{StaticResource Subtle}" FontSize="11" Margin="0,6,0,0"/>
+                                   Visibility="{Binding DescVis}" TextTrimming="CharacterEllipsis" TextWrapping="NoWrap"/>
+                        <TextBlock Text="{Binding Meta}" Style="{StaticResource Subtle}" FontSize="11" Margin="0,6,0,0"
+                                   Visibility="{Binding MetaVis}" TextTrimming="CharacterEllipsis" TextWrapping="NoWrap"/>
                     </StackPanel>
                     <Button Grid.Column="2" VerticalAlignment="Center" Style="{StaticResource Ghost}"
                             Padding="10,6" Click="Delete_Click" Tag="{Binding}" ToolTip="Delete"

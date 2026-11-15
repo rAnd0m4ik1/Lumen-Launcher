@@ -28,6 +28,7 @@ public class MinecraftService
         _manifest = ReadCache<VersionManifest>(cache)
             ?? throw new Exception("Mojang's version list is unreachable and no copy is cached yet");
         _manifest.versions ??= new();
+        McVersions.Seed(_manifest.versions.Where(v => v.type == "release").Select(v => v.id));
         return _manifest;
     }
 
