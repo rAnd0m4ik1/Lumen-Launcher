@@ -1,5 +1,4 @@
 using System.Windows;
-using System.Windows.Controls;
 using CraftDeck.Controls;
 using CraftDeck.Services;
 using CraftDeck.Views;

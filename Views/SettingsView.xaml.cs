@@ -1,13 +1,10 @@
-using System.IO;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Data;
 using System.Windows.Media;
 using System.Windows.Media.Animation;
 using System.Windows.Media.Effects;
-using System.Windows.Shapes;
 using CraftDeck.Controls;
-using CraftDeck.Models;
 using CraftDeck.Services;
 
 namespace CraftDeck.Views;

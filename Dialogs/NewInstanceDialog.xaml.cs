@@ -1,5 +1,4 @@
 using System.Windows;
-using System.Windows.Controls;
 using CraftDeck.Controls;
 using CraftDeck.Models;
 using CraftDeck.Services;
@@ -25,7 +24,7 @@ public partial class NewInstanceDialog : Window
         _prefMc = preferredMc;
         _prefLoaderVer = preferredLoaderVersion;
         LoaderBox.ItemsSource = new[] { "Vanilla", "Fabric", "Quilt", "Forge", "NeoForge" };
-        LoaderBox.SelectedItem = LoaderName(preferredLoader) ?? "Fabric";
+        LoaderBox.SelectedItem = LoaderName(preferredLoader) ?? "Vanilla";
         LoaderBox.SelectionChanged += async (_, _) => await LoadLoaderVersionsAsync();
         if (preferredName != null) NameBox.Text = preferredName;
         else NameBox.Text = "New pack";
@@ -65,7 +64,7 @@ public partial class NewInstanceDialog : Window
             .Select(v => v.id).ToList();
         if (_prefMc != null && !_mcVersions.Contains(_prefMc)) _mcVersions.Insert(0, _prefMc);
         MCBox.ItemsSource = _mcVersions;
-        var want = _prefMc ?? "1.20.1";
+        var want = _prefMc ?? manifest.latest?.release ?? _mcVersions.FirstOrDefault() ?? "";
         var idx = _mcVersions.IndexOf(want);
         MCBox.SelectedIndex = idx >= 0 ? idx : 0;
         _ = LoadLoaderVersionsAsync();

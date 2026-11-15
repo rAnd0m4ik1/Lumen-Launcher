@@ -281,7 +281,7 @@ public partial class BrowseView : UserControl
         BuildEdgeFade();
     }
 
-    private static readonly string[] Loaders = { "Vanilla", "Fabric", "Quilt", "Forge", "NeoForge" };
+    private static readonly string[] Loaders = { "Fabric", "Quilt", "Forge", "NeoForge" };
 
     private List<string> _mcVersions = new();
     private bool _syncing;
@@ -347,7 +347,7 @@ public partial class BrowseView : UserControl
             VerPick.ItemsSource = list;
             VerPick.SelectedItem = mc;
         }
-        LoaderPick.SelectedItem = inst.Config.Loader.ToString();
+        LoaderPick.SelectedItem = inst.Config.Loader == LoaderKind.Vanilla ? "Fabric" : inst.Config.Loader.ToString();
         _syncing = false;
     }
 
