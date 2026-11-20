@@ -56,27 +56,47 @@ public static class CurseForgeService
         _ => 0,
     };
 
-    public static CFFile? PickFile(CFMod m, string? loader, ContentType type, string? gameVersion = null) =>
-        Best(m.latestFiles ?? new List<CFFile>(), loader, type, gameVersion);
+    public static CFFile? PickFile(CFMod m, string? loader, ContentType type, string? gameVersion = null,
+        string? shaderFormat = null) =>
+        Best(m.latestFiles ?? new List<CFFile>(), loader, type, gameVersion, shaderFormat);
 
-    public static CFFile? PickFrom(List<CFFile> files, string? loader, ContentType type, string? gameVersion) =>
-        Best(files, loader, type, gameVersion);
+    public static CFFile? PickFrom(List<CFFile> files, string? loader, ContentType type, string? gameVersion,
+        string? shaderFormat = null) =>
+        Best(files, loader, type, gameVersion, shaderFormat);
 
-    private static CFFile? Best(List<CFFile> files, string? loader, ContentType type, string? gameVersion)
+    private static CFFile? Best(List<CFFile> files, string? loader, ContentType type, string? gameVersion,
+        string? shaderFormat)
     {
         var needLoader = type == ContentType.Mod && !string.IsNullOrEmpty(loader) && loader is not ("Vanilla" or "vanilla");
-        return files
+        var fits = files
             .Where(f => f.fileName.EndsWith(".jar", StringComparison.OrdinalIgnoreCase) ||
                         f.fileName.EndsWith(".zip", StringComparison.OrdinalIgnoreCase))
             .Where(f => !needLoader || f.gameVersions?.Any(v => v.Equals(loader, StringComparison.OrdinalIgnoreCase)) == true)
             .Where(f => McVersions.Matches(f.gameVersions, gameVersion))
             .OrderByDescending(f => DateTime.TryParse(f.fileDate, out var d) ? d : DateTime.MinValue)
-            .FirstOrDefault();
+            .ToList();
+        if (shaderFormat != null)
+        {
+            var shaped = fits.FirstOrDefault(f => Tagged(f, shaderFormat) ||
+                f.fileName.Contains(shaderFormat, StringComparison.OrdinalIgnoreCase));
+            if (shaped != null) return shaped;
+        }
+        return fits.FirstOrDefault();
     }
+
+    public static List<CFFile> PreferFormat(List<CFFile> files, string? shaderFormat)
+    {
+        if (shaderFormat == null) return files;
+        var shaped = files.Where(f => Tagged(f, shaderFormat)).ToList();
+        return shaped.Count > 0 ? shaped : files;
+    }
+
+    private static bool Tagged(CFFile f, string format) =>
+        f.gameVersions?.Any(v => v.Equals(format, StringComparison.OrdinalIgnoreCase)) == true;
 
     public static string LoadersOf(CFFile f, string? first = null)
     {
-        string[] known = { "Fabric", "Forge", "NeoForge", "Quilt", "OptiFine" };
+        string[] known = { "Fabric", "Forge", "NeoForge", "Quilt", "OptiFine", "Iris" };
         var found = (f.gameVersions ?? new List<string>()).Where(v => known.Contains(v)).Distinct().ToList();
         var i = first == null ? -1 : found.FindIndex(v => v.Equals(first, StringComparison.OrdinalIgnoreCase));
         if (i > 0)
@@ -118,11 +138,12 @@ public static class CurseForgeService
     public static async Task InstallAsync(Instance inst, CFMod m, string mcVersion, string loader,
         ContentType type, long pinnedFile = 0, CancellationToken ct = default)
     {
+        var format = type == ContentType.Shader ? ShaderFormat.For(inst) : null;
         var f = pinnedFile != 0
             ? (await GetFilesAsync(m.id, ct: ct)).FirstOrDefault(x => x.id == pinnedFile)
-            : PickFile(m, loader, type, mcVersion);
+            : PickFile(m, loader, type, mcVersion, format);
         if (f == null && pinnedFile == 0)
-            f = PickFrom(await GetFilesAsync(m.id, ct: ct, gameVersion: mcVersion), loader, type, mcVersion);
+            f = PickFrom(await GetFilesAsync(m.id, ct: ct, gameVersion: mcVersion), loader, type, mcVersion, format);
         if (f == null)
             throw new Exception(pinnedFile != 0
                 ? $"“{m.name}” no longer has that file."
@@ -135,6 +156,7 @@ public static class CurseForgeService
         var target = Path.Combine(dir, ModrinthService.Sanitize(f.fileName));
         var d = new Downloader(2);
         await d.RunAsync(new[] { new DownloadItem(url, target, f.fileLength) }, ct);
+        ContentMatch.ReplaceSame(dir, m.name, null, target);
     }
 
     public static async Task<string> DownloadModpackAsync(long modId, string title,

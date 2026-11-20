@@ -1,4 +1,4 @@
-﻿<UserControl x:Class="CraftDeck.Views.DetailView"
+<UserControl x:Class="CraftDeck.Views.DetailView"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:ctl="clr-namespace:CraftDeck.Controls">
@@ -52,12 +52,18 @@
                         <TextBlock Text="{Binding Meta}" Style="{StaticResource Subtle}" FontSize="11" Margin="0,6,0,0"
                                    Visibility="{Binding MetaVis}" TextTrimming="CharacterEllipsis" TextWrapping="NoWrap"/>
                     </StackPanel>
-                    <Button Grid.Column="2" VerticalAlignment="Center" Style="{StaticResource Ghost}"
-                            Padding="10,6" Click="Delete_Click" Tag="{Binding}" ToolTip="Delete"
-                            AutomationProperties.Name="Delete">
-                        <ctl:Icon Style="{StaticResource BtnIcon}" Margin="0" Glyph="Trash" Size="15"
-                                  Foreground="{DynamicResource DangerBrush}"/>
-                    </Button>
+                    <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
+                        <Button Style="{StaticResource Ghost}" Padding="10,6" Margin="0,0,4,0" Click="Versions_Click"
+                                Tag="{Binding}" Visibility="{Binding SwitchVis}" ToolTip="Change version"
+                                AutomationProperties.Name="Versions">
+                            <ctl:Icon Style="{StaticResource BtnIcon}" Margin="0" Glyph="ChevronDown" Size="16" Weight="2.4"/>
+                        </Button>
+                        <Button Style="{StaticResource Ghost}" Padding="10,6" Click="Delete_Click" Tag="{Binding}"
+                                ToolTip="Delete" AutomationProperties.Name="Delete">
+                            <ctl:Icon Style="{StaticResource BtnIcon}" Margin="0" Glyph="Trash" Size="15"
+                                      Foreground="{DynamicResource DangerBrush}"/>
+                        </Button>
+                    </StackPanel>
                 </Grid>
             </Border>
         </DataTemplate>
@@ -122,70 +128,249 @@
             </Grid>
         </Border>
 
-        <TabControl Grid.Row="2" x:Name="Tabs" SelectionChanged="Tabs_SelectionChanged">
-            <TabItem Header="Mods">
-                <Grid>
+        <Grid Grid.Row="2">
+            <TabControl x:Name="Tabs" SelectionChanged="Tabs_SelectionChanged">
+                <TabItem Header="Mods">
+                    <Grid>
+                        <ScrollViewer VerticalScrollBarVisibility="Auto">
+                            <StackPanel Margin="0,8,0,0">
+                                <ItemsControl x:Name="ModsList" ItemTemplate="{StaticResource ContentCard}"/>
+                            </StackPanel>
+                        </ScrollViewer>
+                        <ProgressBar x:Name="ModsBusy" IsIndeterminate="True" Height="3" VerticalAlignment="Top" Visibility="Collapsed"/>
+                    </Grid>
+                </TabItem>
+                <TabItem Header="Shaders">
+                    <Grid>
+                        <ScrollViewer VerticalScrollBarVisibility="Auto">
+                            <StackPanel Margin="0,8,0,0">
+                                <ItemsControl x:Name="ShadersList" ItemTemplate="{StaticResource ContentCard}"/>
+                            </StackPanel>
+                        </ScrollViewer>
+                        <ProgressBar x:Name="ShadersBusy" IsIndeterminate="True" Height="3" VerticalAlignment="Top" Visibility="Collapsed"/>
+                    </Grid>
+                </TabItem>
+                <TabItem Header="Resource packs">
+                    <Grid>
+                        <ScrollViewer VerticalScrollBarVisibility="Auto">
+                            <StackPanel Margin="0,8,0,0">
+                                <ItemsControl x:Name="RpsList" ItemTemplate="{StaticResource ContentCard}"/>
+                            </StackPanel>
+                        </ScrollViewer>
+                        <ProgressBar x:Name="RpsBusy" IsIndeterminate="True" Height="3" VerticalAlignment="Top" Visibility="Collapsed"/>
+                    </Grid>
+                </TabItem>
+                <TabItem Header="Worlds">
+                    <Grid>
+                        <ScrollViewer VerticalScrollBarVisibility="Auto">
+                            <StackPanel Margin="0,8,0,0">
+                                <ItemsControl x:Name="WorldsList" ItemTemplate="{StaticResource ContentCard}"/>
+                            </StackPanel>
+                        </ScrollViewer>
+                        <ProgressBar x:Name="WorldsBusy" IsIndeterminate="True" Height="3" VerticalAlignment="Top" Visibility="Collapsed"/>
+                    </Grid>
+                </TabItem>
+                <TabItem Header="Log">
+                    <Grid Margin="0,8,0,0">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="*"/>
+                        </Grid.RowDefinitions>
+                        <TextBlock x:Name="LogState" Style="{StaticResource Subtle}" FontSize="11"/>
+                        <TextBox Grid.Row="1" x:Name="LogBox" Margin="0,8,0,0" IsReadOnly="True"
+                                 FontFamily="Cascadia Mono, Consolas" FontSize="12" TextWrapping="NoWrap"
+                                 VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto"
+                                 Tag="No output yet — press Play and the game log shows up here."
+                                 AutomationProperties.Name="Game log"/>
+                    </Grid>
+                </TabItem>
+                <TabItem Header="Save &amp; configs">
+                    <Border Style="{StaticResource Card}" HorizontalAlignment="Left" VerticalAlignment="Top" Margin="0,8">
+                        <StackPanel>
+                            <Button Content="Open game folder" Style="{StaticResource Outlined}" HorizontalAlignment="Left" Click="OpenGame_Click"/>
+                            <Button Content="Open world saves" Style="{StaticResource Outlined}" HorizontalAlignment="Left" Margin="0,6,0,0" Click="OpenSaves_Click"/>
+                            <Button Content="Open config folder" Style="{StaticResource Outlined}" HorizontalAlignment="Left" Margin="0,6,0,0" Click="OpenConfig_Click"/>
+                        </StackPanel>
+                    </Border>
+                </TabItem>
+                <TabItem Header="Multiplayer">
                     <ScrollViewer VerticalScrollBarVisibility="Auto">
-                        <StackPanel Margin="0,8,0,0">
-                            <ItemsControl x:Name="ModsList" ItemTemplate="{StaticResource ContentCard}"/>
+                        <StackPanel Margin="0,8,24,0" MaxWidth="680" HorizontalAlignment="Left">
+                            <Border Style="{StaticResource Card}">
+                                <StackPanel>
+                                    <TextBlock Text="Multiplayer" Style="{StaticResource H2}"/>
+                                    <TextBlock x:Name="NetState" Style="{StaticResource Subtle}" FontSize="11.5"
+                                               Margin="0,5,0,0" TextWrapping="Wrap"/>
+
+                                    <Grid x:Name="NetStart" Margin="0,11,0,0">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="Auto"/>
+                                            <ColumnDefinition Width="Auto"/>
+                                        </Grid.ColumnDefinitions>
+                                        <TextBox x:Name="CodeBox" Tag="Paste a friend's code"
+                                                 KeyDown="CodeBox_KeyDown" AutomationProperties.Name="Friend code"/>
+                                        <Button x:Name="JoinBtn" Grid.Column="1" Style="{StaticResource Accent}"
+                                                Margin="8,0,0,0" Padding="12,6" Click="Join_Click"
+                                                AutomationProperties.Name="Join with code">
+                                            <StackPanel Orientation="Horizontal">
+                                                <ctl:Icon Style="{StaticResource BtnIcon}" Glyph="Play"/>
+                                                <TextBlock Text="Join"/>
+                                            </StackPanel>
+                                        </Button>
+                                        <Button x:Name="CreateBtn" Grid.Column="2" Style="{StaticResource Outlined}"
+                                                Margin="8,0,0,0" Padding="12,6" Click="Create_Click"
+                                                AutomationProperties.Name="Create game">
+                                            <StackPanel Orientation="Horizontal">
+                                                <ctl:Icon Style="{StaticResource BtnIcon}" Glyph="Plus"/>
+                                                <TextBlock Text="New game"/>
+                                            </StackPanel>
+                                        </Button>
+                                    </Grid>
+
+                                    <Grid x:Name="NetLive" Margin="0,11,0,0" Visibility="Collapsed">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="Auto"/>
+                                            <ColumnDefinition Width="Auto"/>
+                                        </Grid.ColumnDefinitions>
+                                        <Border Background="{DynamicResource Bg2Brush}"
+                                                BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1"
+                                                CornerRadius="8" Padding="12,9">
+                                            <TextBlock x:Name="CodeText" FontFamily="Consolas, Cascadia Mono, monospace"
+                                                       FontSize="14.5" TextWrapping="Wrap"
+                                                       AutomationProperties.Name="Multiplayer code"/>
+                                        </Border>
+                                        <Button Grid.Column="1" Style="{StaticResource Ghost}" Padding="9,6"
+                                                Margin="8,0,0,0" Click="CopyCode_Click" ToolTip="Copy code"
+                                                AutomationProperties.Name="Copy multiplayer code">
+                                            <ctl:Icon Style="{StaticResource BtnIcon}" Margin="0" Glyph="Copy" Size="14"/>
+                                        </Button>
+                                        <Button x:Name="LeaveBtn" Grid.Column="2" Style="{StaticResource Outlined}"
+                                                Padding="12,6" Margin="8,0,0,0" Click="Leave_Click"
+                                                AutomationProperties.Name="Leave game">
+                                            <TextBlock Text="Leave"/>
+                                        </Button>
+                                    </Grid>
+                                </StackPanel>
+                            </Border>
+
+                            <Border Style="{StaticResource Card}" Margin="0,10,0,0">
+                                <StackPanel>
+                                    <TextBlock Text="Your world" Style="{StaticResource H2}"/>
+                                    <TextBlock x:Name="ShareName" FontSize="13" TextWrapping="Wrap"
+                                               Margin="0,5,0,0" Visibility="Collapsed"
+                                               Foreground="{DynamicResource TextBrush}"/>
+                                    <TextBlock x:Name="ShareState" Style="{StaticResource Subtle}" FontSize="11.5"
+                                               Margin="0,5,0,0" TextWrapping="Wrap"/>
+                                    <Grid Margin="0,11,0,0">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="Auto"/>
+                                            <ColumnDefinition Width="Auto"/>
+                                            <ColumnDefinition Width="*"/>
+                                        </Grid.ColumnDefinitions>
+                                        <Button x:Name="ShareBtn" Style="{StaticResource Outlined}" Padding="12,6"
+                                                HorizontalAlignment="Left" Click="Share_Click"
+                                                AutomationProperties.Name="Share this world">
+                                            <TextBlock Text="Share this world"/>
+                                        </Button>
+                                        <ComboBox x:Name="PortPick" Grid.Column="1" Style="{StaticResource ChipCombo}"
+                                                  Width="96" Margin="10,0,0,0" VerticalAlignment="Center"
+                                                  Visibility="Collapsed" SelectionChanged="PortPick_SelectionChanged"
+                                                  AutomationProperties.Name="World port"/>
+                                    </Grid>
+                                </StackPanel>
+                            </Border>
+
+                            <Border Style="{StaticResource Card}" Margin="0,10,0,0">
+                                <StackPanel>
+                                    <TextBlock Text="Worlds to join" Style="{StaticResource H2}"/>
+                                    <TextBlock x:Name="RoomState" Style="{StaticResource Subtle}" FontSize="11.5"
+                                               Margin="0,5,0,0" TextWrapping="Wrap"/>
+                                    <ItemsControl x:Name="WorldList" Margin="0,10,0,0">
+                                        <ItemsControl.ItemTemplate>
+                                            <DataTemplate>
+                                                <Grid Margin="0,0,0,6">
+                                                    <Grid.ColumnDefinitions>
+                                                        <ColumnDefinition Width="*"/>
+                                                        <ColumnDefinition Width="Auto"/>
+                                                    </Grid.ColumnDefinitions>
+                                                    <StackPanel VerticalAlignment="Center">
+                                                        <TextBlock Text="{Binding Title}" FontSize="13"
+                                                                   Foreground="{DynamicResource TextBrush}"/>
+                                                        <TextBlock Text="{Binding Sub}" Style="{StaticResource Subtle}"
+                                                                   FontSize="11" Margin="0,2,0,0"/>
+                                                    </StackPanel>
+                                                    <Button Grid.Column="1" Style="{StaticResource Accent}"
+                                                            Padding="12,6" HorizontalAlignment="Right"
+                                                            VerticalAlignment="Center" Tag="{Binding}"
+                                                            Click="Connect_Click" Visibility="{Binding Join}"
+                                                            AutomationProperties.Name="Connect to this world">
+                                                        <TextBlock Text="Connect"/>
+                                                    </Button>
+                                                </Grid>
+                                            </DataTemplate>
+                                        </ItemsControl.ItemTemplate>
+                                    </ItemsControl>
+                                </StackPanel>
+                            </Border>
+
+                            <TextBlock Style="{StaticResource Subtle}" FontSize="11" Margin="0,12,0,0"
+                                       TextWrapping="Wrap"
+                                       Text="Nothing to install or register on the other side: your friend only pastes this code. Both packs need the same Minecraft version and the same mods. If one of you is behind a strict router or a carrier-grade NAT, the two computers may not reach each other directly."/>
                         </StackPanel>
                     </ScrollViewer>
-                    <ProgressBar x:Name="ModsBusy" IsIndeterminate="True" Height="3" VerticalAlignment="Top" Visibility="Collapsed"/>
-                </Grid>
-            </TabItem>
-            <TabItem Header="Shaders">
-                <Grid>
-                    <ScrollViewer VerticalScrollBarVisibility="Auto">
-                        <StackPanel Margin="0,8,0,0">
-                            <ItemsControl x:Name="ShadersList" ItemTemplate="{StaticResource ContentCard}"/>
-                        </StackPanel>
-                    </ScrollViewer>
-                    <ProgressBar x:Name="ShadersBusy" IsIndeterminate="True" Height="3" VerticalAlignment="Top" Visibility="Collapsed"/>
-                </Grid>
-            </TabItem>
-            <TabItem Header="Resource packs">
-                <Grid>
-                    <ScrollViewer VerticalScrollBarVisibility="Auto">
-                        <StackPanel Margin="0,8,0,0">
-                            <ItemsControl x:Name="RpsList" ItemTemplate="{StaticResource ContentCard}"/>
-                        </StackPanel>
-                    </ScrollViewer>
-                    <ProgressBar x:Name="RpsBusy" IsIndeterminate="True" Height="3" VerticalAlignment="Top" Visibility="Collapsed"/>
-                </Grid>
-            </TabItem>
-            <TabItem Header="Worlds">
-                <Grid>
-                    <ScrollViewer VerticalScrollBarVisibility="Auto">
-                        <StackPanel Margin="0,8,0,0">
-                            <ItemsControl x:Name="WorldsList" ItemTemplate="{StaticResource ContentCard}"/>
-                        </StackPanel>
-                    </ScrollViewer>
-                    <ProgressBar x:Name="WorldsBusy" IsIndeterminate="True" Height="3" VerticalAlignment="Top" Visibility="Collapsed"/>
-                </Grid>
-            </TabItem>
-            <TabItem Header="Log">
-                <Grid Margin="0,8,0,0">
+                </TabItem>
+            </TabControl>
+
+            <TextBox x:Name="FilterBox" Width="280" HorizontalAlignment="Right" VerticalAlignment="Top"
+                     Margin="0,-4,0,0" Visibility="Collapsed" TextChanged="Filter_TextChanged" Tag="Search mods…"
+                     AutomationProperties.Name="Search in this pack"/>
+        </Grid>
+
+        <Popup x:Name="VersionPopup" Grid.Row="2" Placement="Bottom" PlacementTarget="{x:Null}"
+               HorizontalOffset="-266" VerticalOffset="6" StaysOpen="False" AllowsTransparency="True">
+            <Border Background="{DynamicResource CardBrush}" BorderBrush="{DynamicResource BorderBrush}"
+                    BorderThickness="1" CornerRadius="10" Padding="5" Width="300">
+                <Grid MaxHeight="320">
                     <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
                         <RowDefinition Height="Auto"/>
                         <RowDefinition Height="*"/>
                     </Grid.RowDefinitions>
-                    <TextBlock x:Name="LogState" Style="{StaticResource Subtle}" FontSize="11"/>
-                    <TextBox Grid.Row="1" x:Name="LogBox" Margin="0,8,0,0" IsReadOnly="True"
-                             FontFamily="Cascadia Mono, Consolas" FontSize="12" TextWrapping="NoWrap"
-                             VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto"
-                             Tag="No output yet — press Play and the game log shows up here."
-                             AutomationProperties.Name="Game log"/>
+                    <TextBlock x:Name="VersionTitle" Text="Version" Style="{StaticResource Subtle}"
+                               FontSize="11" Margin="9,6,9,6"/>
+                    <TextBlock x:Name="VersionBusy" Grid.Row="1" Text="Loading…" Style="{StaticResource Subtle}"
+                               FontSize="12" Margin="9,0,9,8" Visibility="Collapsed"/>
+                    <ScrollViewer Grid.Row="2" VerticalScrollBarVisibility="Auto">
+                        <ItemsControl x:Name="VersionList">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <Button Style="{StaticResource Ghost}" HorizontalContentAlignment="Left"
+                                            Padding="9,6" Click="VersionRow_Click" Tag="{Binding}"
+                                            AutomationProperties.Name="{Binding Label}">
+                                        <Grid>
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="*"/>
+                                                <ColumnDefinition Width="Auto"/>
+                                            </Grid.ColumnDefinitions>
+                                            <StackPanel>
+                                                <TextBlock Text="{Binding Label}" FontSize="12.5" TextWrapping="NoWrap"
+                                                           TextTrimming="CharacterEllipsis"/>
+                                                <TextBlock Text="{Binding Meta}" Style="{StaticResource Subtle}" FontSize="11"
+                                                           TextWrapping="NoWrap" TextTrimming="CharacterEllipsis" Margin="0,1,0,0"/>
+                                            </StackPanel>
+                                            <ctl:Icon Grid.Column="1" Glyph="Check" Size="13" Weight="2.2"
+                                                      Visibility="{Binding CheckVis}" VerticalAlignment="Center"
+                                                      Foreground="{DynamicResource TextBrush}"/>
+                                        </Grid>
+                                    </Button>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </ScrollViewer>
                 </Grid>
-            </TabItem>
-            <TabItem Header="Save &amp; configs">
-                <Border Style="{StaticResource Card}" HorizontalAlignment="Left" VerticalAlignment="Top" Margin="0,8">
-                    <StackPanel>
-                        <Button Content="Open game folder" Style="{StaticResource Outlined}" HorizontalAlignment="Left" Click="OpenGame_Click"/>
-                        <Button Content="Open world saves" Style="{StaticResource Outlined}" HorizontalAlignment="Left" Margin="0,6,0,0" Click="OpenSaves_Click"/>
-                        <Button Content="Open config folder" Style="{StaticResource Outlined}" HorizontalAlignment="Left" Margin="0,6,0,0" Click="OpenConfig_Click"/>
-                    </StackPanel>
-                </Border>
-            </TabItem>
-        </TabControl>
+            </Border>
+        </Popup>
     </Grid>
 </UserControl>

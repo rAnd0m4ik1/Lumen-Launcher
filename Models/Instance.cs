@@ -18,6 +18,7 @@ public class InstanceConfig
     public string? JavaPath { get; set; }
     public int? MaxMemoryMb { get; set; }
     public string ExtraJvmArgs { get; set; } = "";
+    public string? JoinAddress { get; set; }
     public DateTime CreatedAt { get; set; } = DateTime.Now;
     public DateTime LastPlayed { get; set; }
     public long PlaytimeSeconds { get; set; }

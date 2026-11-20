@@ -26,6 +26,8 @@ public class AppSettings
     public string BackgroundStyle { get; set; } = "gradient";
     public string BackgroundFx { get; set; } = "off";
     public string FxColor { get; set; } = Services.FxColorCatalog.Default;
+    public DateTime LastUpdateCheck { get; set; }
+    public string? SkipUpdateTag { get; set; }
 
     public string InstancesDir => Path.Combine(RootDir, "instances");
     public string SharedDir => Path.Combine(RootDir, "shared");

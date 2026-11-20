@@ -62,6 +62,7 @@ public static class RunningGames
     public static event Action? Changed;
 
     public static bool IsRunning(string id) => Sessions.TryGetValue(id, out var s) && s.Running;
+    public static bool AnyRunning { get { lock (Sessions) return Sessions.Values.Any(s => s.Running); } }
     public static GameSession? Of(string id) => Sessions.TryGetValue(id, out var s) ? s : null;
 
     public static GameSession Track(Instance inst, Process proc, GameLog log)

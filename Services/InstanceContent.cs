@@ -15,6 +15,10 @@ public record ContentItem(string Title, string Desc, string Meta, string Letter,
     public Visibility LetterVis => Icon != null ? Visibility.Collapsed : Visibility.Visible;
     public Visibility DescVis => string.IsNullOrEmpty(Desc) ? Visibility.Collapsed : Visibility.Visible;
     public Visibility MetaVis => string.IsNullOrEmpty(Meta) ? Visibility.Collapsed : Visibility.Visible;
+    public Visibility SwitchVis =>
+        Path.EndsWith(".jar", StringComparison.OrdinalIgnoreCase) ||
+        Path.EndsWith(".zip", StringComparison.OrdinalIgnoreCase)
+            ? Visibility.Visible : Visibility.Collapsed;
 }
 
 public static class InstanceContent
@@ -55,6 +59,23 @@ public static class InstanceContent
                 IconOfFile(Path.Combine(dir, "icon.png")), dir));
         }
         return items;
+    }
+
+    public static string LatestWorld(string savesDir)
+    {
+        var name = "";
+        var best = -1L;
+        if (!Directory.Exists(savesDir)) return name;
+        foreach (var dir in Directory.EnumerateDirectories(savesDir))
+        {
+            var level = ReadLevelDat(Path.Combine(dir, "level.dat"));
+            if (level?[0] is not string world) continue;
+            var played = level[2] is long ms ? ms : 0;
+            if (played < best) continue;
+            best = played;
+            name = world;
+        }
+        return name;
     }
 
     private static List<ContentItem> Files(string dir, Func<string, ContentItem> build)
@@ -339,8 +360,13 @@ public static class InstanceContent
             if (r.ReadByte() != 10) return null;
             ReadString(r);
             var root = ReadCompound(r, 0);
-            if (root == null || !root.TryGetValue("Data", out var data) || data is not Dictionary<string, object?> d)
-                return null;
+            if (root == null) return null;
+            // Minecraft 26.x keeps the fields at the root and leaves Data empty; older versions nest them in Data.
+            Dictionary<string, object?> d;
+            if (root.TryGetValue("Data", out var data) && data is Dictionary<string, object?> nested && nested.Count > 0)
+                d = nested;
+            else
+                d = root;
             return new object?[]
             {
                 d.TryGetValue("LevelName", out var n) ? n as string : null,
@@ -385,8 +411,8 @@ public static class InstanceContent
                 return null;
             }
             case 10: return ReadCompound(r, depth + 1);
-            case 11: r.ReadBytes((int)ReadInt(r, 4)); return null;
-            case 12: r.ReadBytes((int)ReadInt(r, 4) * 4); return null;
+            case 11: r.ReadBytes((int)ReadInt(r, 4) * 4); return null;
+            case 12: r.ReadBytes((int)ReadInt(r, 4) * 8); return null;
             case 13: r.ReadBytes((int)ReadInt(r, 4) * 8); return null;
             default: return null;
         }

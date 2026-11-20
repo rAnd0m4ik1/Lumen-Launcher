@@ -20,6 +20,7 @@ public partial class MainWindow : Window
         InitializeComponent();
         VersionText.Text = typeof(MainWindow).Assembly.GetName().Version?.ToString(3) ?? "0";
         WindowCorners.Apply(this);
+        MaximizeToWorkArea.Apply(this);
         PageHost.Content = _instances;
         RefreshAccount();
         Fx.Mode = BackgroundFX.ParseMode(AppServices.Settings.BackgroundFx);
@@ -29,9 +30,55 @@ public partial class MainWindow : Window
         StateChanged += (_, _) =>
         {
             MaxGlyph.Glyph = WindowState == WindowState.Maximized ? "CaptionRestore" : "CaptionMax";
-            RootGrid.Margin = WindowState == WindowState.Maximized ? new Thickness(7) : new Thickness(0);
             WinFrame.BorderThickness = WindowState == WindowState.Maximized ? new Thickness(0) : new Thickness(1);
         };
+        UpdateService.Changed += OnUpdateChanged;
+        RunningGames.Changed += OnUpdateChanged;
+        UpdateUi();
+    }
+
+    private void OnUpdateChanged() => Dispatcher.BeginInvoke(UpdateUi);
+
+    private void UpdateUi()
+    {
+        var rel = UpdateService.Available;
+        if (rel == null || UpdateService.Blocked)
+        {
+            NavUpdate.Visibility = Visibility.Collapsed;
+            return;
+        }
+        NavUpdate.Visibility = Visibility.Visible;
+        UpdateLabel.Text = UpdateService.Staged ? "Restart to apply"
+            : UpdateService.Busy ? $"Updating {Math.Round(UpdateService.Fraction * 100)}%"
+            : $"Update to {rel.Tag}";
+        NavUpdate.IsEnabled = !UpdateService.Busy;
+    }
+
+    private async void Update_Click(object sender, RoutedEventArgs e)
+    {
+        if (UpdateService.Staged)
+        {
+            UpdateService.RestartToApply();
+            Close();
+            return;
+        }
+        if (UpdateService.Available == null) return;
+        UpdateUi();
+        try
+        {
+            await UpdateService.StageAsync();
+            if (UpdateService.Staged)
+            {
+                UpdateService.RestartToApply();
+                Close();
+            }
+        }
+        catch (Exception ex)
+        {
+            App.Log("update stage: " + ex);
+            SetIdle("Update failed");
+        }
+        UpdateUi();
     }
 
     private void Min_Click(object sender, RoutedEventArgs e) => WindowState = WindowState.Minimized;

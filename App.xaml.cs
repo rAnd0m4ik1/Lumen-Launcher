@@ -9,6 +9,7 @@ public partial class App : Application
 {
     protected override void OnStartup(StartupEventArgs e)
     {
+        if (Updater.RunIfRequested(e.Args)) Environment.Exit(0);
         base.OnStartup(e);
         DispatcherUnhandledException += OnUnhandled;
         AppDomain.CurrentDomain.UnhandledException += (_, args) =>
@@ -20,7 +21,9 @@ public partial class App : Application
             ThemeService.ApplyTheme(settings.ThemeMode, settings.BackgroundPreset, settings.BackgroundStyle, settings.AccentColor);
             var w = new MainWindow();
             w.Show();
+            Updater.MarkApplied();
             _ = AccountService.RefreshAllMicrosoftAsync();
+            _ = UpdateService.AutoCheckAsync();
         }
         catch (Exception ex)
         {

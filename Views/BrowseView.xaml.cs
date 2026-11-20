@@ -17,7 +17,7 @@ namespace CraftDeck.Views;
 public class BrowseCard : INotifyPropertyChanged
 {
     private static readonly string[] KnownLoaders =
-        { "fabric", "quilt", "forge", "neoforge", "optifine", "vanilla", "bedrock", "sponge" };
+        { "fabric", "quilt", "forge", "neoforge", "optifine", "iris", "vanilla", "bedrock", "sponge" };
 
     public Hit? Hit { get; init; }
     public CFMod? Cf { get; init; }
@@ -381,6 +381,10 @@ public partial class BrowseView : UserControl
     private string FilterLoader() =>
         LoaderPick.SelectedItem as string ?? (TargetInstance.SelectedItem as Instance)?.Config.Loader.ToString() ?? "Fabric";
 
+    private string? ShaderFilter() =>
+        CurrentType == ContentType.Shader && TargetInstance.SelectedItem is Instance inst
+            ? ShaderFormat.For(inst) : null;
+
     private static string TLabel(ContentType t) => t switch
     {
         ContentType.Shader => "Shaders",
@@ -454,6 +458,7 @@ public partial class BrowseView : UserControl
         {
             var type = CurrentType;
             var pack = type == ContentType.Modpack;
+            var shaderFormat = ShaderFilter();
             await LoadVersionListAsync();
             var mc = pack ? null : FilterMc();
             var loader = pack ? null : FilterLoader();
@@ -464,10 +469,10 @@ public partial class BrowseView : UserControl
                 var (mods, raw) = await CurseForgeService.SearchAsync(query, type, mc, loader, PageSize, _page);
                 var picked = await Task.WhenAll(mods.Select(async m =>
                 {
-                    var best = CurseForgeService.PickFile(m, loader, type, mc);
+                    var best = CurseForgeService.PickFile(m, loader, type, mc, shaderFormat);
                     if (best == null && !pack)
                         best = CurseForgeService.PickFrom(await CurseForgeService.GetFilesAsync(m.id, gameVersion: mc),
-                            loader, type, mc);
+                            loader, type, mc, shaderFormat);
                     return (m, best);
                 }));
                 cards = picked.Where(t => t.best != null)
@@ -477,7 +482,7 @@ public partial class BrowseView : UserControl
             else
             {
                 var (hits, _) = await ModrinthService.SearchAsync(query, type, mc, loader,
-                    PageSize, (_page - 1) * PageSize);
+                    PageSize, (_page - 1) * PageSize, shaderFormat);
                 cards = hits.Select(BrowseCard.From).ToList();
                 more = cards.Count == PageSize;
             }
@@ -650,26 +655,29 @@ public partial class BrowseView : UserControl
         var loader = pack || picked == "Vanilla" ? "" : picked;
         bool Fits(List<string>? values, string wanted) => wanted.Length == 0 || McVersions.Matches(values, wanted);
         bool needsLoader = CurrentType == ContentType.Mod;
+        var format = ShaderFilter();
 
         if (card.Cf != null)
         {
             var files = await CurseForgeService.GetFilesAsync(card.Cf.id, gameVersion: mc);
-            return files
+            var fits = files
                 .Where(f => !pack || f.fileName.EndsWith(".zip", StringComparison.OrdinalIgnoreCase))
                 .Where(f => Fits(f.gameVersions, mc) &&
                             (!needsLoader || Fits(f.gameVersions, loader)))
-                .Select(f => VersionRow.From(f, mc, loader)).ToList();
+                .ToList();
+            return CurseForgeService.PreferFormat(fits, format).Select(f => VersionRow.From(f, mc, loader)).ToList();
         }
         var versions = await ModrinthService.GetVersionsAsync(card.Hit!.project_id);
         bool IsPack(ProjectVersion v) => v.files!.Any(f =>
             f.filename.EndsWith(".mr", StringComparison.OrdinalIgnoreCase) ||
             f.filename.EndsWith(".mrpack", StringComparison.OrdinalIgnoreCase));
-        return versions
+        var matches = versions
             .Where(v => v.files?.Count > 0)
             .Where(v => !pack || IsPack(v))
             .Where(v => Fits(v.game_versions, mc) && (!needsLoader || Fits(v.loaders, loader)))
             .OrderByDescending(v => v.date_published)
-            .Select(VersionRow.From).ToList();
+            .ToList();
+        return ModrinthService.PreferFormat(matches, format).Select(VersionRow.From).ToList();
     }
 
     private async void VersionRow_Click(object sender, RoutedEventArgs e)

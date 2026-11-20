@@ -6,7 +6,8 @@ namespace CraftDeck.Services;
 
 public static class PlayFlow
 {
-    public static async Task PlayAsync(Instance inst, FrameworkElement owner, Button? playBtn = null)
+    public static async Task PlayAsync(Instance inst, FrameworkElement owner, Button? playBtn = null,
+        string? joinAddress = null)
     {
         var wnd = Window.GetWindow(owner);
         var main = MainWindow.Main!;
@@ -31,7 +32,7 @@ public static class PlayFlow
                 App.Log($"Java: {ex.Message}");
             }
 
-            var plan = AppServices.Launch.BuildPlan(inst, details, java);
+            var plan = AppServices.Launch.BuildPlan(inst, details, java, joinAddress);
             var proc = await AppServices.Launch.LaunchAsync(inst, plan, log);
             RunningGames.Track(inst, proc, log);
 

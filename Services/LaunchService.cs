@@ -72,7 +72,8 @@ public class LaunchService
         catch (Exception ex) when (ex is JsonException || ex is IOException) { return null; }
     }
 
-    public LaunchPlan BuildPlan(Instance inst, VersionDetails details, string? javaOverride = null)
+    public LaunchPlan BuildPlan(Instance inst, VersionDetails details, string? javaOverride = null,
+        string? joinAddress = null)
     {
         var features = new Dictionary<string, bool>
         {
@@ -144,6 +145,19 @@ public class LaunchService
             ["secondary_launcher_version"] = "1.0",
         };
 
+        string? joinHost = null;
+        var joinPort = NetInfo.DefaultPort;
+        if (NetInfo.TryTarget(joinAddress, out var jh, out var jp))
+        {
+            joinHost = jh;
+            joinPort = jp;
+            if (HasGameArg(details.arguments, "--quickPlayMultiplayer"))
+            {
+                features["is_quick_play_multiplayer"] = true;
+                subs["quickPlayMultiplayer"] = $"{joinHost}:{joinPort}";
+            }
+        }
+
         var jvm = new List<string>();
         var game = new List<string>();
         bool hasX = false, hasClasspath = false, hasUsername = false;
@@ -177,6 +191,14 @@ public class LaunchService
                 if (s == "--username") hasUsername = true;
                 game.Add(s);
             }
+        }
+
+        if (joinHost != null && !features["is_quick_play_multiplayer"])
+        {
+            game.Add("--server");
+            game.Add(joinHost);
+            game.Add("--port");
+            game.Add(joinPort.ToString());
         }
 
         var maxMb = inst.Config.MaxMemoryMb ?? _settings.MaxMemoryMb;
@@ -285,8 +307,19 @@ public class LaunchService
         }
     }
 
-    private static bool RangeAllows(JsonElement range)
+    private static bool HasGameArg(JsonElement arguments, string flag) =>
+        arguments.ValueKind == JsonValueKind.Object &&
+        arguments.TryGetProperty("game", out var game) && ContainsString(game, flag);
+
+    private static bool ContainsString(JsonElement el, string flag) => el.ValueKind switch
     {
+        JsonValueKind.String => el.GetString() == flag,
+        JsonValueKind.Array => el.EnumerateArray().Any(e => ContainsString(e, flag)),
+        JsonValueKind.Object => el.EnumerateObject().Any(p => ContainsString(p.Value, flag)),
+        _ => false,
+    };
+
+    private static bool RangeAllows(JsonElement range)    {
         var current = Environment.OSVersion.Version;
         foreach (var bound in new[] { "min", "max" })
         {

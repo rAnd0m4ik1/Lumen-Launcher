@@ -13,24 +13,41 @@ public static class ContentMatch
         "for", "and", "the", "of", "x", "jar", "zip",
     };
 
-    public static List<HashSet<string>> ScanDir(string dir)
+    public record Entry(string Path, HashSet<string> Words);
+
+    public static List<Entry> ScanDir(string dir)
     {
         if (!Directory.Exists(dir)) return new();
         try
         {
             return Directory.EnumerateFiles(dir)
-                .Select(f => Words(Path.GetFileNameWithoutExtension(f)))
-                .Where(w => w.Count > 0)
+                .Select(f => new Entry(f, Words(Path.GetFileNameWithoutExtension(f))))
+                .Where(e => e.Words.Count > 0)
                 .ToList();
         }
         catch { return new(); }
     }
 
-    public static bool Any(string? title, string? slug, List<HashSet<string>> installed)
+    public static bool Any(string? title, string? slug, List<Entry> installed) =>
+        SameAs(title, slug, installed).Count > 0;
+
+    public static List<string> SameAs(string? title, string? slug, List<Entry> installed)
     {
         var card = new List<HashSet<string>> { Words(title), Words(slug?.Replace('-', ' ')), Slug(slug) };
         card.RemoveAll(c => c.Count == 0);
-        return card.Count > 0 && installed.Any(i => card.Any(c => Fits(c, i) || Fits(i, c)));
+        if (card.Count == 0) return new();
+        return installed.Where(i => card.Any(c => Fits(c, i.Words) || Fits(i.Words, c)))
+            .Select(i => i.Path).ToList();
+    }
+
+    public static void ReplaceSame(string dir, string? title, string? slug, string keep)
+    {
+        var full = Path.GetFullPath(keep);
+        foreach (var old in SameAs(title, slug, ScanDir(dir)))
+        {
+            if (string.Equals(Path.GetFullPath(old), full, StringComparison.OrdinalIgnoreCase)) continue;
+            try { File.Delete(old); } catch { }
+        }
     }
 
     private static HashSet<string> Slug(string? slug)
